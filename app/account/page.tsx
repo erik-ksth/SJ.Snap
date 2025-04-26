@@ -1,15 +1,16 @@
 'use client';
 
-import { useAuth } from '@/lib/context/auth-context';
-import { signOut } from '@/lib/firebase/auth';
+import { useSupabaseAuth } from '@/lib/context/supabase-auth-context';
+import { signOut } from '@/lib/supabase/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function AccountPage() {
-     const { user, userData, loading } = useAuth();
+     const { user, loading } = useSupabaseAuth();
      const router = useRouter();
      const [firstName, setFirstName] = useState('');
      const [lastName, setLastName] = useState('');
+     const [memberSince, setMemberSince] = useState<string | null>(null);
 
      useEffect(() => {
           // If not logged in and not loading, redirect to login
@@ -17,11 +18,17 @@ export default function AccountPage() {
                router.push('/login');
           }
 
-          // Parse full name into first and last name
-          if (user?.displayName) {
-               const nameParts = user.displayName.split(' ');
+          // Parse name from user metadata if available
+          if (user?.user_metadata?.full_name) {
+               const fullName = user.user_metadata.full_name;
+               const nameParts = fullName.split(' ');
                setFirstName(nameParts[0] || '');
                setLastName(nameParts.slice(1).join(' ') || '');
+          }
+
+          // Get created_at timestamp
+          if (user?.created_at) {
+               setMemberSince(new Date(user.created_at).toLocaleDateString());
           }
      }, [user, loading, router]);
 
@@ -54,16 +61,15 @@ export default function AccountPage() {
 
                <div className="p-6 border rounded-lg shadow-sm mb-6">
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                         {/* {user.photoURL && (
+                         {user.user_metadata?.avatar_url && (
                               <div className="relative w-24 h-24 rounded-full overflow-hidden">
-                                   <Image
-                                        src={user.photoURL}
+                                   <img
+                                        src={user.user_metadata.avatar_url}
                                         alt="Profile"
-                                        fill
-                                        className="object-cover"
+                                        className="w-full h-full object-cover"
                                    />
                               </div>
-                         )} */}
+                         )}
 
                          <div className="flex-1 w-full">
                               <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
@@ -96,13 +102,13 @@ export default function AccountPage() {
                                         </div>
                                    </div>
 
-                                   {userData?.createdAt && (
+                                   {memberSince && (
                                         <div className="md:col-span-2">
                                              <label className="block text-sm font-medium text-gray-500 mb-1">
                                                   Member Since
                                              </label>
                                              <div className="text-gray-600 text-sm">
-                                                  {userData.createdAt.toDate().toLocaleDateString()}
+                                                  {memberSince}
                                              </div>
                                         </div>
                                    )}
