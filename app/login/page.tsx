@@ -1,32 +1,74 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { signInWithGoogle } from '@/lib/firebase/auth';
+import { useRouter } from 'next/navigation';
+import { FcGoogle } from 'react-icons/fc';
+import { useAuth } from '@/lib/context/auth-context';
+
 export default function LoginPage() {
+     const [loading, setLoading] = useState(false);
+     const [error, setError] = useState('');
+     const router = useRouter();
+     const { user } = useAuth();
+
+     // Redirect if user is already logged in
+     useEffect(() => {
+          if (user) {
+               router.push('/report');
+          }
+     }, [user, router]);
+
+     const handleGoogleSignIn = async () => {
+          setLoading(true);
+          setError('');
+
+          try {
+               const result = await signInWithGoogle();
+               if (result.success) {
+                    // Force navigation to report page
+                    window.location.href = '/report';
+               } else {
+                    setError(result.error || 'An error occurred during sign in');
+               }
+          } catch (err: unknown) {
+               console.log('Sign in error:', err);
+               const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+
+               // Check if this is a network error
+               if (errorMessage.includes('offline') || errorMessage.includes('network')) {
+                    setError('Network error: Please check your internet connection and try again.');
+               } else {
+                    setError(errorMessage);
+               }
+          } finally {
+               setLoading(false);
+          }
+     };
+
      return (
           <div className="container mx-auto px-4 py-8 max-w-md">
-               <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+               <h1 className="text-2xl font-bold mb-6 text-center">Login / Register</h1>
+
                <div className="p-6 border rounded-lg shadow-sm">
-                    <div className="space-y-4">
-                         <div>
-                              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                                   Email
-                              </label>
-                              <input
-                                   type="email"
-                                   id="email"
-                                   className="w-full px-3 py-2 border rounded-md"
-                                   placeholder="you@example.com"
-                              />
+                    {error && (
+                         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-sm">
+                              {error}
                          </div>
-                         <div>
-                              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                                   Password
-                              </label>
-                              <input
-                                   type="password"
-                                   id="password"
-                                   className="w-full px-3 py-2 border rounded-md"
-                              />
-                         </div>
-                         <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-                              Sign In
+                    )}
+
+                    <div className="text-center mb-6">
+                         <p className="mb-4 text-gray-600">
+                              Sign in or register with your Google account
+                         </p>
+
+                         <button
+                              onClick={handleGoogleSignIn}
+                              disabled={loading}
+                              className="w-full flex justify-center items-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 py-3 px-4 rounded-md transition-colors"
+                         >
+                              <FcGoogle className="text-xl" />
+                              <span>{loading ? 'Processing...' : 'Continue with Google'}</span>
                          </button>
                     </div>
                </div>
