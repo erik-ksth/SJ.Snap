@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* @import "https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css"; */
 
 @custom-variant dark (&:is(.dark *));
 
