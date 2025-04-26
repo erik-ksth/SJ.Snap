@@ -1,13 +1,20 @@
 "use client";
 
 import { useAuth } from "@/lib/context/auth-context";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapPinIcon, PhotoIcon } from "@heroicons/react/24/outline";
+import mapboxgl from "mapbox-gl";
+
+mapboxgl.accessToken =
+  "pk.eyJ1IjoiYXVuZ2JvYm8wNCIsImEiOiJjbTl5cTZzajcxbGlvMmpwdmV0a2E2MDVzIn0.HRwDajB6LBfUF1EIYlMaXg"; // Replace with your Mapbox token
 
 export default function ReportPage() {
   const { user, loading } = useAuth();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const [marker, setMarker] = useState<mapboxgl.Marker | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,6 +52,19 @@ export default function ReportPage() {
           } else {
             setLocation(`Lat: ${lat}, Lng: ${lng}`);
           }
+
+          // Update Mapbox map and marker
+          if (map) {
+            map.flyTo({ center: [lng, lat], zoom: 14 });
+            if (marker) {
+              marker.setLngLat([lng, lat]);
+            } else {
+              const newMarker = new mapboxgl.Marker()
+                .setLngLat([lng, lat])
+                .addTo(map);
+              setMarker(newMarker);
+            }
+          }
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -56,8 +76,37 @@ export default function ReportPage() {
     }
   };
 
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    const mapInstance = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: "mapbox://styles/mapbox/streets-v12",
+      center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
+      zoom: 12,
+    });
+
+    //     mapInstance.addControl(
+    //       new mapboxgl.GeolocateControl({
+    //         positionOptions: {
+    //           enableHighAccuracy: true,
+    //         },
+    //         // When active the map will receive updates to the device's location as it changes.
+    //         trackUserLocation: true,
+    //         // Draw an arrow next to the location dot to indicate which direction the device is heading.
+    //         showUserHeading: true,
+    //       })
+    //     );
+
+    setMap(mapInstance);
+
+    return () => {
+      mapInstance.remove();
+    };
+  }, []);
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-3xl">
       <h1 className="text-2xl font-bold mb-6">Report</h1>
 
       {!user && !loading && (
@@ -158,10 +207,16 @@ export default function ReportPage() {
           </div>
         </div>
 
+        {/* Mapbox Map */}
+        <div
+          ref={mapContainerRef}
+          className="w-full h-96 mt-4 border rounded"
+        ></div>
+
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700"
+          className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-6"
         >
           Submit Report
         </button>
