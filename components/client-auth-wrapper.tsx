@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth } from '@/lib/context/auth-context';
+import { useSupabaseAuth } from '@/lib/context/supabase-auth-context';
 import { ReactNode } from 'react';
 
 interface ClientAuthWrapperProps {
@@ -8,7 +8,7 @@ interface ClientAuthWrapperProps {
 }
 
 export function ClientAuthWrapper({ children }: ClientAuthWrapperProps) {
-     const { user } = useAuth();
+     const { user } = useSupabaseAuth();
      const isLoggedIn = !!user;
 
      // Pass isLoggedIn as a prop to the global context

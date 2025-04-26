@@ -1,10 +1,10 @@
 'use client';
 
-import { useAuth } from '@/lib/context/auth-context';
+import { useSupabaseAuth } from '@/lib/context/supabase-auth-context';
 import Link from 'next/link';
 
 export function LoginButton() {
-     const { user } = useAuth();
+     const { user } = useSupabaseAuth();
      const isLoggedIn = !!user;
 
      return isLoggedIn ? (

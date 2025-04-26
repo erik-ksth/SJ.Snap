@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { AuthProvider } from "@/lib/context/auth-context";
+import { SupabaseAuthProvider } from "@/lib/context/supabase-auth-context";
 import { ClientAuthWrapper } from "@/components/client-auth-wrapper";
 import { LoginButton } from "@/components/login-button";
 
@@ -31,15 +31,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <AuthProvider>
+        <SupabaseAuthProvider>
           <ClientAuthWrapper>
             <header className="border-b">
               <div className="container mx-auto px-4 py-2 flex justify-between items-center">
-                <Link href="/report" className="text-xl font-bold">SJ Snap</Link>
+                <Link href="/dashboard" className="text-xl font-bold">SJ Snap</Link>
                 {/* Desktop navigation */}
                 <nav className="hidden md:flex space-x-4">
-                  <Link href="/report" className="px-3 py-2 rounded-md hover:bg-gray-100">Report</Link>
                   <Link href="/dashboard" className="px-3 py-2 rounded-md hover:bg-gray-100">Dashboard</Link>
+                  <Link href="/report" className="px-3 py-2 rounded-md hover:bg-gray-100">Report</Link>
                   <Link href="/contact" className="px-3 py-2 rounded-md hover:bg-gray-100">Contact</Link>
                 </nav>
                 <div className="flex items-center space-x-2">
@@ -72,7 +72,7 @@ export default function RootLayout({
               </Link>
             </nav>
           </ClientAuthWrapper>
-        </AuthProvider>
+        </SupabaseAuthProvider>
       </body>
     </html>
   );

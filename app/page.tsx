@@ -1,11 +1,11 @@
 'use client';
 
-import { useAuth } from '@/lib/context/auth-context';
+import { useSupabaseAuth } from '@/lib/context/supabase-auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useSupabaseAuth();
   const router = useRouter();
 
   useEffect(() => {

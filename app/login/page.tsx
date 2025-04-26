@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signInWithGoogle } from '@/lib/firebase/auth';
+import { signInWithGoogle } from '@/lib/supabase/supabase';
 import { useRouter } from 'next/navigation';
 import { FcGoogle } from 'react-icons/fc';
-import { useAuth } from '@/lib/context/auth-context';
+import { useSupabaseAuth } from '@/lib/context/supabase-auth-context';
 
 export default function LoginPage() {
      const [loading, setLoading] = useState(false);
      const [error, setError] = useState('');
      const router = useRouter();
-     const { user } = useAuth();
+     const { user } = useSupabaseAuth();
 
      // Redirect if user is already logged in
      useEffect(() => {
@@ -24,13 +24,12 @@ export default function LoginPage() {
           setError('');
 
           try {
-               const result = await signInWithGoogle();
-               if (result.success) {
-                    // Force navigation to report page
-                    window.location.href = '/report';
-               } else {
-                    setError(result.error || 'An error occurred during sign in');
+               const { error } = await signInWithGoogle();
+
+               if (error) {
+                    setError(error.message || 'An error occurred during sign in');
                }
+               // The redirection is handled by the OAuth callback
           } catch (err: unknown) {
                console.log('Sign in error:', err);
                const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
