@@ -145,11 +145,6 @@ export default function ReportPage() {
   const submitReport = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // if (!user) {
-    //   alert('Please log in to submit a report');
-    //   return;
-    // }
-
     if (!imageFile || !imagePreview) {
       alert('Please upload an image');
       return;
@@ -211,10 +206,39 @@ export default function ReportPage() {
         setCurrentStep(4);
       } else {
         // Extract description and location from the response
-        const { description, location } = extractResponseDetails(responseData.response);
+        const { description: enhancedDescription, location: enhancedLocation } = extractResponseDetails(responseData.response);
         // Show success screen
-        console.log("Description:", description);
-        console.log("Location:", location);
+        console.log("Description:", enhancedDescription);
+        console.log("Location:", enhancedLocation);
+
+        // Save report to database - with or without user ID
+        try {
+          const reportData = {
+            description: enhancedDescription,
+            location: enhancedLocation,
+            imageUrl: uploadData.publicUrl,
+            // Only include userId if user is logged in
+            ...(user && { userId: user.id })
+          };
+
+          const reportResponse = await fetch('/api/reports', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(reportData),
+          });
+
+          if (reportResponse.ok) {
+            console.log("Report saved to database");
+          } else {
+            console.error("Failed to save report to database");
+            const errorData = await reportResponse.json();
+            console.error("Error details:", errorData);
+          }
+        } catch (error) {
+          console.error("Error saving report to database:", error);
+        }
 
         // Send email using EmailJS with Supabase image URL
         const result = await emailjs.send(
@@ -224,8 +248,8 @@ export default function ReportPage() {
             from_name: "SJ Snap",
             from_email: "kaungsitu09009@gmail.com",
             email: "heinkaung16@gmail.com",
-            description: description,
-            location: location,
+            description: enhancedDescription,
+            location: enhancedLocation,
             imageUrl: uploadData.publicUrl, // Use the Supabase public URL instead
             latitude: marker?.getLngLat().lat,
             longitude: marker?.getLngLat().lng,
@@ -281,6 +305,12 @@ export default function ReportPage() {
           </div>
           <h2 className="text-xl font-semibold mt-8 mb-3 text-center">Report Submitted Successfully!</h2>
           <p className="text-gray-600 text-center">Thank you for your contribution</p>
+
+          {user && (
+            <p className="text-gray-600 text-center mt-2">
+              Your report has been saved to your account
+            </p>
+          )}
 
           <button
             onClick={() => {

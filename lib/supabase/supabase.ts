@@ -35,7 +35,6 @@ export async function createReport(reportData: {
   description: string;
   location?: string | null;
   image_url?: string | null;
-  status?: string;
 }) {
   const user = await getCurrentUser();
   if (!user) throw new Error("User must be logged in to create a report");
@@ -47,7 +46,6 @@ export async function createReport(reportData: {
       description: reportData.description,
       location: reportData.location || null,
       image_url: reportData.image_url || null,
-      status: reportData.status || "pending",
     })
     .select();
 

@@ -42,7 +42,6 @@ export interface Database {
           description: string;
           location: string | null;
           image_url: string | null;
-          status: string;
           created_at: string;
           updated_at: string;
         };
@@ -52,7 +51,6 @@ export interface Database {
           description: string;
           location?: string | null;
           image_url?: string | null;
-          status?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -62,7 +60,6 @@ export interface Database {
           description?: string;
           location?: string | null;
           image_url?: string | null;
-          status?: string;
           created_at?: string;
           updated_at?: string;
         };
