@@ -388,6 +388,56 @@ export default function ReportPage() {
     }
   };
 
+  // useEffect(() => {
+  //   if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
+  //     console.log("Initializing map, step:", currentStep);
+
+  //     // Create a new map instance
+  //     const mapInstance = new mapboxgl.Map({
+  //       container: mapContainerRef.current,
+  //       style: "mapbox://styles/mapbox/streets-v12",
+  //       center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
+  //       zoom: 12,
+  //     });
+
+  //     // Store map in state
+  //     setMap(mapInstance);
+
+  //     // Wait for the map to load once
+  //     let mapLoaded = false;
+  //     mapInstance.on('load', () => {
+  //       // Prevent duplicate load events
+  //       if (mapLoaded) return;
+  //       mapLoaded = true;
+
+  //       console.log("Map loaded successfully");
+
+  //       // If we have location coordinates stored from previous marker
+  //       if (marker) {
+  //         const position = marker.getLngLat();
+
+  //         // Create a new marker at the same position
+  //         const newMarker = new mapboxgl.Marker()
+  //           .setLngLat(position)
+  //           .addTo(mapInstance);
+
+  //         setMarker(newMarker);
+
+  //         // Center the map on the marker position
+  //         mapInstance.flyTo({
+  //           center: position,
+  //           zoom: 14
+  //         });
+  //       }
+  //     });
+
+  //     // Cleanup function
+  //     return () => {
+  //       console.log("Cleaning up map instance");
+  //       mapInstance.remove();
+  //     };
+  //   }
+  // }, [currentStep, marker]);
   useEffect(() => {
     if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
       console.log("Initializing map, step:", currentStep);
@@ -437,7 +487,9 @@ export default function ReportPage() {
         mapInstance.remove();
       };
     }
-  }, [currentStep, marker]);
+  }, [currentStep]);
+
+
 
   // Render step content based on current step
   const renderStepContent = () => {
