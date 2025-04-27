@@ -3,7 +3,6 @@
 import { useSupabaseAuth } from "@/lib/context/supabase-auth-context";
 import { useState, useEffect, useRef } from "react";
 import { PhotoIcon, ArrowRightIcon, CheckIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
-import { MdOutlineMyLocation } from "react-icons/md";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -11,6 +10,39 @@ import emailjs from "@emailjs/browser";
 import { extractResponseDetails } from "../lib/utils";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
+
+// Define types for speech recognition
+interface SpeechRecognitionEvent extends Event {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+    };
+  };
+  resultIndex: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: (event: Event) => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: (event: Event) => void;
+  start: () => void;
+}
+
+declare global {
+  interface Window {
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
 
 export default function ReportPage() {
   const { user, loading } = useSupabaseAuth();
@@ -22,24 +54,17 @@ export default function ReportPage() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [isListening, setIsListening] = useState(false); // New state for speech-to-text
+  const [isListening, setIsListening] = useState(false);
   const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [marker, setMarker] = useState<mapboxgl.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Add state for editing in step 4
   const [isEditingDescription, setIsEditingDescription] = useState(false);
-
-  // Add new state for tracking the current step
   const [currentStep, setCurrentStep] = useState(1);
-  // Add state for success confirmation
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // Add state for error count
-  const [errorCount, setErrorCount] = useState(0);
+  const [speechErrorCount, setSpeechErrorCount] = useState(0);
 
   useEffect(() => {
     // Automatically open camera on mobile when the page loads
@@ -151,33 +176,31 @@ export default function ReportPage() {
     setCurrentStep(currentStep + 1);
   };
 
-  // New function for speech-to-text
+  // Speech-to-text function with proper typing
   const handleSpeechToText = () => {
     if (!('webkitSpeechRecognition' in window)) {
       alert("Speech recognition is not supported in this browser. Please use Google Chrome.");
       return;
     }
 
-    const recognition = new (window as any).webkitSpeechRecognition();
+    const recognition = new window.webkitSpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-
 
     recognition.onstart = () => {
       console.log("Speech recognition started");
       setIsListening(true);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const speechResult = event.results[0][0].transcript;
       setDescription((prev) => `${prev} ${speechResult}`.trim());
     };
 
-    recognition.onerror = (event: any) => {
-      setErrorCount((prev) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      setSpeechErrorCount((prev) => {
         const newErrorCount = prev + 1;
-        // console.log("Error count:", newErrorCount);
 
         if (event.error === "not-allowed") {
           alert("Microphone access is required for speech recognition. Please allow microphone access.");
@@ -190,6 +213,8 @@ export default function ReportPage() {
         if (newErrorCount >= 3) {
           alert("Speech to text feature is best compatible with Google Chrome!");
           console.log("Speech recognition error count exceeded");
+          // Reset error count after showing the warning
+          return 0;
         }
 
         return newErrorCount;
@@ -203,21 +228,6 @@ export default function ReportPage() {
 
     console.log("Starting speech recognition...");
     recognition.start();
-  };
-
-  const validateEmail = (email: string) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
-  const handleEmailSubmit = () => {
-    if (!validateEmail(userEmail)) {
-      setEmailError('Please enter a valid email address');
-      return false;
-    }
-    setEmailError('');
-    setShowEmailDialog(false);
-    return true;
   };
 
   const validateEmail = (email: string) => {
@@ -587,6 +597,11 @@ export default function ReportPage() {
                   <MicrophoneIcon className="h-6 w-6" />
                 </button>
               </div>
+              {speechErrorCount > 0 && (
+                <p className="text-yellow-600 text-sm mt-2 text-center">
+                  {speechErrorCount} error(s) occurred. Please try again or type manually.
+                </p>
+              )}
             </div>
 
             {/* Next Button */}
@@ -608,18 +623,17 @@ export default function ReportPage() {
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Click 'Detect Location' to automatically detect your location"
+                placeholder="Enter location or click 'Detect Location'"
                 className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                readOnly
                 value={location || ''}
                 readOnly
               />
               <button
                 type="button"
                 onClick={detectLocation}
-                className="whitespace-nowrap rounded-lg bg-black px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
+                className="whitespace-nowrap rounded-lg bg-slate-600 px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
               >
-                <MdOutlineMyLocation className="h-5 w-5" />
+                Detect Location
               </button>
             </div>
             <div
@@ -628,13 +642,7 @@ export default function ReportPage() {
             ></div>
             <button
               type="button"
-              onClick={() => {
-                if (location) {
-                  moveToNextStep();
-                } else {
-                  alert("Please detect your location first");
-                }
-              }}
+              onClick={moveToNextStep}
               className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-6 flex items-center justify-center"
             >
               Next
