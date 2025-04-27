@@ -41,6 +41,36 @@ export default function ReportPage() {
   // Add state for error count
   const [errorCount, setErrorCount] = useState(0);
 
+  // Add type for speech recognition
+  interface SpeechRecognitionEvent extends Event {
+    results: {
+      [key: number]: {
+        [key: number]: {
+          transcript: string;
+        };
+      };
+    };
+  }
+
+  interface SpeechRecognitionErrorEvent extends Event {
+    error: string;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    lang: string;
+    interimResults: boolean;
+    maxAlternatives: number;
+    onstart: (event: Event) => void;
+    onresult: (event: SpeechRecognitionEvent) => void;
+    onerror: (event: SpeechRecognitionErrorEvent) => void;
+    onend: (event: Event) => void;
+    start: () => void;
+  }
+
+  interface Window {
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+
   useEffect(() => {
     // Automatically open camera on mobile when the page loads
     if (currentStep === 1 && fileInputRef.current && isMobile()) {
@@ -158,7 +188,7 @@ export default function ReportPage() {
       return;
     }
 
-    const recognition = new (window as any).webkitSpeechRecognition();
+    const recognition = new (window as Window).webkitSpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
@@ -169,12 +199,12 @@ export default function ReportPage() {
       setIsListening(true);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const speechResult = event.results[0][0].transcript;
       setDescription((prev) => `${prev} ${speechResult}`.trim());
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       setErrorCount((prev) => {
         const newErrorCount = prev + 1;
         // console.log("Error count:", newErrorCount);
@@ -407,7 +437,7 @@ export default function ReportPage() {
         mapInstance.remove();
       };
     }
-  }, [currentStep]);
+  }, [currentStep, marker]);
 
   // Render step content based on current step
   const renderStepContent = () => {
@@ -543,11 +573,11 @@ export default function ReportPage() {
           </div>
         );
 
-        case 2: // Description step
+      case 2: // Description step
         return (
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-4">Describe the Issue</h2>
-      
+
             {/* Textarea */}
             <div className="relative">
               <textarea
@@ -560,22 +590,27 @@ export default function ReportPage() {
                 required
                 autoFocus
               ></textarea>
-      
+
+              {errorCount >= 2 && (
+                <div className="mt-2 text-yellow-600 text-sm">
+                  Having trouble with speech recognition? Try using Google Chrome.
+                </div>
+              )}
+
               {/* Circular Speech Button */}
               <div className="flex justify-center mt-4">
                 <button
                   type="button"
                   onClick={handleSpeechToText}
                   disabled={isListening}
-                  className={`flex items-center justify-center rounded-full w-14 h-14 border-none ${
-                    isListening ? "bg-green-400 animate-pulse" : "bg-green-600 hover:bg-green-700"
-                  } text-white focus:outline-none`}
+                  className={`flex items-center justify-center rounded-full w-14 h-14 border-none ${isListening ? "bg-green-400 animate-pulse" : "bg-green-600 hover:bg-green-700"
+                    } text-white focus:outline-none`}
                 >
                   <MicrophoneIcon className="h-6 w-6" />
                 </button>
               </div>
             </div>
-      
+
             {/* Next Button */}
             <button
               type="button"
@@ -599,7 +634,6 @@ export default function ReportPage() {
                 className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                 readOnly
                 value={location || ''}
-                readOnly
               />
               <button
                 type="button"
