@@ -164,7 +164,24 @@ export default function ReportPage() {
     setIsSubmitting(true);
 
     try {
-      // Create FormData object
+      // First upload the image to Supabase
+      const uploadFormData = new FormData();
+      uploadFormData.append("image", imageFile);
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(errorData.details || errorData.error || "Failed to upload image");
+      }
+
+      const uploadData = await uploadResponse.json();
+      console.log("Image upload successful:", uploadData);
+
+      // Now create FormData for image verification with the Supabase URL
       const formData = new FormData();
       formData.append("description", description);
       if (location) {
@@ -174,7 +191,7 @@ export default function ReportPage() {
       }
       formData.append("image", imageFile);
 
-      // Send the request
+      // Send the request for verification
       const response = await fetch('/api/imageVerification', {
         method: 'POST',
         body: formData,
@@ -199,10 +216,7 @@ export default function ReportPage() {
         console.log("Description:", description);
         console.log("Location:", location);
 
-        const imageUrl =
-          "https://media.istockphoto.com/id/1147892817/photo/san-jose-california.jpg?s=612x612&w=0&k=20&c=eDOeL6Wgjaia6_HXRzXxofC90zv9kbP5tJ88sme_TIU=";
-
-        // Send email using EmailJS
+        // Send email using EmailJS with Supabase image URL
         const result = await emailjs.send(
           "service_az5gytx", // Service ID from EmailJS
           "template_sqlnyfo", // Template ID from EmailJS
@@ -212,7 +226,7 @@ export default function ReportPage() {
             email: "heinkaung16@gmail.com",
             description: description,
             location: location,
-            imageUrl: imageUrl,
+            imageUrl: uploadData.publicUrl, // Use the Supabase public URL instead
             latitude: marker?.getLngLat().lat,
             longitude: marker?.getLngLat().lng,
           },
