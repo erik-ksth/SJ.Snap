@@ -4,6 +4,7 @@ import { useSupabaseAuth } from "@/lib/context/supabase-auth-context";
 import { useState, useEffect, useRef } from "react";
 import { PhotoIcon, ArrowRightIcon, CheckIcon } from "@heroicons/react/24/outline";
 import mapboxgl from "mapbox-gl";
+import Image from "next/image";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiYXVuZ2JvYm8wNCIsImEiOiJjbTl5cTZzajcxbGlvMmpwdmV0a2E2MDVzIn0.HRwDajB6LBfUF1EIYlMaXg"; // Replace with your Mapbox token
@@ -35,7 +36,7 @@ export default function ReportPage() {
         fileInputRef.current?.click();
       }, 500);
     }
-  }, []);
+  }, [currentStep]);
 
   // Check if user is on mobile
   const isMobile = () => {
@@ -239,10 +240,11 @@ export default function ReportPage() {
               <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                 {imagePreview ? (
                   <div className="h-full w-full relative">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Preview"
                       className="h-full w-full object-contain p-2"
+                      fill
                     />
                     <button
                       onClick={() => {
@@ -326,11 +328,12 @@ export default function ReportPage() {
             {/* Image preview */}
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Photo</h3>
-              <div className="h-48 w-full">
-                <img
+              <div className="h-48 w-full relative">
+                <Image
                   src={imagePreview || ''}
                   alt="Preview"
-                  className="h-full w-full object-contain border rounded"
+                  className="object-contain"
+                  fill
                 />
               </div>
             </div>

@@ -4,6 +4,7 @@ import { useSupabaseAuth } from '@/lib/context/supabase-auth-context';
 import { signOut } from '@/lib/supabase/supabase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 export default function AccountPage() {
      const { user, loading } = useSupabaseAuth();
@@ -63,10 +64,11 @@ export default function AccountPage() {
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                          {user.user_metadata?.avatar_url && (
                               <div className="relative w-24 h-24 rounded-full overflow-hidden">
-                                   <img
+                                   <Image
                                         src={user.user_metadata.avatar_url}
                                         alt="Profile"
-                                        className="w-full h-full object-cover"
+                                        className="object-cover"
+                                        fill
                                    />
                               </div>
                          )}

@@ -1,6 +1,3 @@
-import { DialogOverlay } from "@radix-ui/react-dialog";
-
-
 export default function ContactPage() {
 
      const address = "200 E. Santa Clara St. San Jose, CA 95113";
