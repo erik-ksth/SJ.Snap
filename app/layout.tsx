@@ -5,7 +5,7 @@ import Link from "next/link";
 import { SupabaseAuthProvider } from "@/lib/context/supabase-auth-context";
 import { ClientAuthWrapper } from "@/components/client-auth-wrapper";
 import { LoginButton } from "@/components/login-button";
-import Image from 'next/image';
+import Image from "next/image";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -89,7 +89,7 @@ export default function RootLayout({
                     href="/about"
                     className="md:hidden flex items-center p-2 hover:bg-gray-100 rounded-md "
                   >
-                    Contact
+                    About
                   </Link>
                   <LoginButton />
                 </div>
