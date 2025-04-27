@@ -3,6 +3,7 @@
 import { useSupabaseAuth } from "@/lib/context/supabase-auth-context";
 import { useState, useEffect, useRef } from "react";
 import { PhotoIcon, ArrowRightIcon, CheckIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
+import { MdOutlineMyLocation } from "react-icons/md";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -509,17 +510,18 @@ export default function ReportPage() {
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Enter location or click 'Detect Location'"
+                placeholder="Click 'Detect Location' to automatically detect your location"
                 className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                readOnly
                 value={location || ''}
                 readOnly
               />
               <button
                 type="button"
                 onClick={detectLocation}
-                className="whitespace-nowrap rounded-lg bg-slate-600 px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
+                className="whitespace-nowrap rounded-lg bg-black px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
               >
-                Detect Location
+                <MdOutlineMyLocation className="h-5 w-5" />
               </button>
             </div>
             <div
@@ -528,7 +530,13 @@ export default function ReportPage() {
             ></div>
             <button
               type="button"
-              onClick={moveToNextStep}
+              onClick={() => {
+                if (location) {
+                  moveToNextStep();
+                } else {
+                  alert("Please detect your location first");
+                }
+              }}
               className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-6 flex items-center justify-center"
             >
               Next
