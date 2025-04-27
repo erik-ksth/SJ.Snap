@@ -7,8 +7,8 @@ import mapboxgl from "mapbox-gl";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiYXVuZ2JvYm8wNCIsImEiOiJjbTl5cTZzajcxbGlvMmpwdmV0a2E2MDVzIn0.HRwDajB6LBfUF1EIYlMaXg"; // Replace with your Mapbox token
-import { useRouter } from 'next/navigation';
-import { uploadFile, getPublicUrl, createReport } from '@/lib/supabase/supabase';
+// /import { useRouter } from 'next/navigation';
+// import { uploadFile, getPublicUrl, createReport } from '@/lib/supabase/supabase';
 
 export default function ReportPage() {
   const { user, loading } = useSupabaseAuth();
@@ -17,7 +17,7 @@ export default function ReportPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
+  // const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [marker, setMarker] = useState<mapboxgl.Marker | null>(null);
@@ -99,27 +99,36 @@ export default function ReportPage() {
     setIsSubmitting(true);
 
     try {
-      // Generate a unique file path
-      const filePath = `${user.id}/${Date.now()}-${imageFile.name}`;
+      // Create FormData object
+      const formData = new FormData();
+      formData.append("description", description);
+      if (location) {
+        formData.append("location", location);
+      } else {
+        formData.append("location", "");
+      }
+      formData.append("image", imageFile);
 
-      // Upload image to Supabase Storage
-      await uploadFile('reports', filePath, imageFile, {
-        contentType: imageFile.type,
-        upsert: false
+      // Send the request
+      const response = await fetch('/api/imageVerification', {
+        method: 'POST',
+        body: formData,
       });
 
-      // Get the public URL
-      const imageUrl = getPublicUrl('reports', filePath);
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.details || data.error || "Something went wrong");
+      }
 
-      // Save report to Supabase
-      await createReport({
-        description,
-        location,
-        image_url: imageUrl,
-      });
-
+      const responseData = await response.json();
+      console.log("API Response:", responseData);
       alert('Report submitted successfully!');
-      router.push('/'); // Redirect to home page
+
+      // Reset form
+      setImagePreview(null);
+      setImageFile(null);
+      setDescription('');
+      setLocation(null);
 
     } catch (error) {
       console.error('Error submitting report:', error);
