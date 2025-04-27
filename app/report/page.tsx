@@ -3,6 +3,7 @@
 import { useSupabaseAuth } from "@/lib/context/supabase-auth-context";
 import { useState, useEffect, useRef } from "react";
 import { PhotoIcon, ArrowRightIcon, CheckIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
+import { MdOutlineMyLocation } from "react-icons/md";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -65,6 +66,7 @@ export default function ReportPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
   const [speechErrorCount, setSpeechErrorCount] = useState(0);
+  const mapInitializedRef = useRef<boolean>(false);
 
   useEffect(() => {
     // Automatically open camera on mobile when the page loads
@@ -382,54 +384,71 @@ export default function ReportPage() {
     }
   };
 
+  // Clean and concise map initialization
   useEffect(() => {
-    if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
+    // Only initialize map when we enter the relevant steps and when the map is not already initialized
+    if ((currentStep === 3 || currentStep === 4) &&
+      mapContainerRef.current &&
+      !mapInitializedRef.current) {
+
       console.log("Initializing map, step:", currentStep);
+      mapInitializedRef.current = true;
 
-      // Create a new map instance
-      const mapInstance = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: "mapbox://styles/mapbox/streets-v12",
-        center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
-        zoom: 12,
-      });
+      try {
+        // Create a new map instance
+        const mapInstance = new mapboxgl.Map({
+          container: mapContainerRef.current,
+          style: "mapbox://styles/mapbox/streets-v12",
+          center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
+          zoom: 12,
+        });
 
-      // Store map in state
-      setMap(mapInstance);
+        // Store map in state
+        setMap(mapInstance);
 
-      // Wait for the map to load once
-      let mapLoaded = false;
-      mapInstance.on('load', () => {
-        // Prevent duplicate load events
-        if (mapLoaded) return;
-        mapLoaded = true;
+        // Wait for the map to load once
+        let mapLoaded = false;
+        mapInstance.on('load', () => {
+          // Prevent duplicate load events
+          if (mapLoaded) return;
+          mapLoaded = true;
 
-        console.log("Map loaded successfully");
+          console.log("Map loaded successfully");
 
-        // If we have location coordinates stored from previous marker
-        if (marker) {
-          const position = marker.getLngLat();
+          // If we have location coordinates stored from previous marker
+          if (marker) {
+            const position = marker.getLngLat();
 
-          // Create a new marker at the same position
-          const newMarker = new mapboxgl.Marker()
-            .setLngLat(position)
-            .addTo(mapInstance);
+            // Create a new marker at the same position
+            const newMarker = new mapboxgl.Marker()
+              .setLngLat(position)
+              .addTo(mapInstance);
 
-          setMarker(newMarker);
+            setMarker(newMarker);
 
-          // Center the map on the marker position
-          mapInstance.flyTo({
-            center: position,
-            zoom: 14
-          });
-        }
-      });
+            // Center the map on the marker position
+            mapInstance.flyTo({
+              center: position,
+              zoom: 14
+            });
+          }
+        });
 
-      // Cleanup function
-      return () => {
-        console.log("Cleaning up map instance");
-        mapInstance.remove();
-      };
+        // Cleanup function
+        return () => {
+          console.log("Cleaning up map instance");
+          mapInstance.remove();
+          mapInitializedRef.current = false;
+        };
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        mapInitializedRef.current = false;
+      }
+    }
+
+    // Reset map initialization state when leaving map steps
+    if (currentStep !== 3 && currentStep !== 4) {
+      mapInitializedRef.current = false;
     }
   }, [currentStep, marker]);
 
@@ -623,7 +642,7 @@ export default function ReportPage() {
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Enter location or click 'Detect Location'"
+                placeholder="Click 'Detect Location' to get your current location"
                 className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                 value={location || ''}
                 readOnly
@@ -633,7 +652,7 @@ export default function ReportPage() {
                 onClick={detectLocation}
                 className="whitespace-nowrap rounded-lg bg-slate-600 px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
               >
-                Detect Location
+                <MdOutlineMyLocation className="h-5 w-5" />
               </button>
             </div>
             <div
