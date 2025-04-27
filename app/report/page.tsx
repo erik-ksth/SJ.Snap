@@ -107,15 +107,21 @@ export default function ReportPage() {
 
           // Update Mapbox map and marker
           if (map) {
+            // First center map on the location
             map.flyTo({ center: [lng, lat], zoom: 14 });
+
+            // Clear existing marker if any
             if (marker) {
-              marker.setLngLat([lng, lat]);
-            } else {
-              const newMarker = new mapboxgl.Marker()
-                .setLngLat([lng, lat])
-                .addTo(map);
-              setMarker(newMarker);
+              marker.remove();
             }
+
+            // Create a new marker
+            const newMarker = new mapboxgl.Marker()
+              .setLngLat([lng, lat])
+              .addTo(map);
+
+            // Update marker state
+            setMarker(newMarker);
           }
         },
         (error) => {
@@ -354,6 +360,8 @@ export default function ReportPage() {
 
   useEffect(() => {
     if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
+      console.log("Initializing map, step:", currentStep);
+
       // Create a new map instance
       const mapInstance = new mapboxgl.Map({
         container: mapContainerRef.current,
@@ -362,10 +370,18 @@ export default function ReportPage() {
         zoom: 12,
       });
 
+      // Store map in state
       setMap(mapInstance);
 
-      // Wait for the map to load
+      // Wait for the map to load once
+      let mapLoaded = false;
       mapInstance.on('load', () => {
+        // Prevent duplicate load events
+        if (mapLoaded) return;
+        mapLoaded = true;
+
+        console.log("Map loaded successfully");
+
         // If we have location coordinates stored from previous marker
         if (marker) {
           const position = marker.getLngLat();
@@ -385,11 +401,13 @@ export default function ReportPage() {
         }
       });
 
+      // Cleanup function
       return () => {
+        console.log("Cleaning up map instance");
         mapInstance.remove();
       };
     }
-  }, [currentStep, mapContainerRef, marker]);
+  }, [currentStep]);
 
   // Render step content based on current step
   const renderStepContent = () => {
@@ -690,6 +708,13 @@ export default function ReportPage() {
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
               <p className="p-2 bg-gray-50 border rounded-lg">{location || "Not detected"}</p>
+              <button
+                type="button"
+                onClick={detectLocation}
+                className="mt-2 text-blue-500 text-sm"
+              >
+                Detect Again
+              </button>
             </div>
 
             {/* Map */}
