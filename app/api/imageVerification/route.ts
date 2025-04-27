@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create user message with location and description
-      const userMessage = `${description} at ${location}.\n\nCheck the image if the problem is correct. If so, format it correctly and informatively to report to the city. Otherwise, tell me the description doesn't match with the image.`;
+      const userMessage = `${description} at ${location}.\n\nCheck the image if the problem is correct. If so, format it correctly and informatively to report to the city. Otherwise, return "Negative" and nothing else.`;
 
       // Check if we have a valid token before proceeding
       if (!hfToken) {
@@ -137,6 +137,17 @@ export async function POST(request: NextRequest) {
         }
 
         console.log("Response received, length:", response.length);
+
+        // Check if response is "Negative"
+        if (response.trim() === "Negative") {
+          return NextResponse.json({
+            success: false,
+            response: "Negative",
+            message:
+              "The description doesn't match with the image. Please provide an accurate description of the issue.",
+          });
+        }
+
         return NextResponse.json({ success: true, response });
       } catch (apiError) {
         console.error("Hugging Face API error:", apiError);

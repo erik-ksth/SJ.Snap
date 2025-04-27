@@ -122,7 +122,10 @@ export default function ReportPage() {
 
       const responseData = await response.json();
       console.log("API Response:", responseData);
-      alert('Report submitted successfully!');
+
+      if (responseData.response == "Negative") {
+        alert("The description doesn't match with the image. Please provide an accurate description of the issue.");
+      }
 
       // Reset form
       setImagePreview(null);
