@@ -56,24 +56,7 @@ export default function RootLayout({
             </header>
             <main className="flex-1 pb-16 md:pb-0">{children}</main>
             {/* Mobile bottom navigation */}
-            <nav className="md:hidden fixed bottom-0 w-full bg-white border-t flex justify-around py-2">
-              <Link href="/report" className="flex flex-col items-center p-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                  />
-                </svg>
-                <span className="text-xs mt-1">Report</span>
-              </Link>
+            <nav className="md:hidden fixed bottom-0 w-full bg-white border-t flex justify-around items-center py-2">
               <Link
                 href="/dashboard"
                 className="flex flex-col items-center p-2"
@@ -94,6 +77,30 @@ export default function RootLayout({
                 </svg>
                 <span className="text-xs mt-1">Dashboard</span>
               </Link>
+
+              {/* Report button (centered and prominent) */}
+              <Link
+                href="/report"
+                className="flex flex-col items-center -mt-8"
+              >
+                <div className="bg-white text-black rounded-full p-4 shadow-lg border border-gray-200">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-10 w-10"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                </div>
+              </Link>
+
               <Link href="/contact" className="flex flex-col items-center p-2">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
