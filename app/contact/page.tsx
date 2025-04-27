@@ -7,10 +7,35 @@ export default function ContactPage() {
      const phone2 = "800 735-2922";
      const phone2Link = "tel:+18007352922";
      const website = "https://www.sanjoseca.gov/residents/report-issues";
+     const ourEmail = "sjsnapteam@gmail.com";
+     const ourEmailLink = "mailto:sjsnapteam@gmail.com";
      return (
           <div className="container mx-auto px-4 py-8">
+
+               {/* Contact Us */}
                <h1 className="text-2xl md:text-4xl font-bold mb-6 text-center md:text-left">
                     Contact Us
+               </h1>
+               <div className="p-6 border rounded-lg space-y-4 md:space-y-6 md:p-8 mb-10">
+                    {/* <p className="text-gray-600 text-sm md:text-base mb-4">
+                         This is the Contact page where users can find ways to get in touch.
+                    </p> */}
+                    <p className="text-gray-600">
+                         <strong>Email:</strong>{" "}
+                         <a
+                              href={ourEmailLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-500 hover:underline hover:text-blue-500"
+                         >
+                              {ourEmail}
+                         </a>
+                    </p>
+               </div>
+
+               {/* Contact The City of San Jose */}
+               <h1 className="text-2xl md:text-4xl font-bold mb-6 text-center md:text-left">
+                    Contact The City of San Jose
                </h1>
                <div className="p-6 border rounded-lg space-y-4 md:space-y-6 md:p-8">
                     {/* <p className="text-gray-600 text-sm md:text-base mb-4">

@@ -71,6 +71,12 @@ export default function RootLayout({
                     Report
                   </Link>
                   <Link
+                    href="/about"
+                    className="px-3 py-2 rounded-md hover:bg-gray-100"
+                  >
+                    About
+                  </Link>
+                  <Link
                     href="/contact"
                     className="px-3 py-2 rounded-md hover:bg-gray-100"
                   >
@@ -78,6 +84,13 @@ export default function RootLayout({
                   </Link>
                 </nav>
                 <div className="flex items-center space-x-2">
+                  {/* About link for mobile view */}
+                  <Link
+                    href="/about"
+                    className="md:hidden flex items-center p-2 hover:bg-gray-100 rounded-md "
+                  >
+                    Contact
+                  </Link>
                   <LoginButton />
                 </div>
               </div>
