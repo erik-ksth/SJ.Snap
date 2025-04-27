@@ -107,7 +107,7 @@ export default function ReportPage() {
           }
 
           // Move to final review step
-          setCurrentStep(4);
+          // setCurrentStep(4);
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -137,9 +137,9 @@ export default function ReportPage() {
     setCurrentStep(currentStep + 1);
 
     // Automatically detect location when reaching location step
-    if (currentStep === 2) {
-      setTimeout(detectLocation, 500);
-    }
+    // if (currentStep === 2) {
+    //   setTimeout(detectLocation, 500);
+    // }
   };
 
   const submitReport = async (e: React.FormEvent) => {
@@ -209,7 +209,7 @@ export default function ReportPage() {
           {
             from_name: "SJ Snap",
             from_email: "kaungsitu09009@gmail.com",
-            email: "heinkaung16@gmail.com",
+            email: "augustbo2002@gmail.com",
             description: description,
             location: location,
             imageUrl: imageUrl,
@@ -231,24 +231,63 @@ export default function ReportPage() {
     }
   };
 
-  useEffect(() => {
-    if (currentStep === 3 || currentStep === 4) {
-      if (!mapContainerRef.current) return;
+  // useEffect(() => {
+  //   if (currentStep === 3 || currentStep === 4) {
+  //     if (!mapContainerRef.current) return;
 
+  //     const mapInstance = new mapboxgl.Map({
+  //       container: mapContainerRef.current,
+  //       style: "mapbox://styles/mapbox/streets-v12",
+  //       center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
+  //       zoom: 12,
+  //     });
+
+  //     setMap(mapInstance);
+
+  //     return () => {
+  //       mapInstance.remove();
+  //     };
+  //   }
+  // }, [currentStep]);
+
+  useEffect(() => {
+    if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
+      // Create a new map instance
       const mapInstance = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: "mapbox://styles/mapbox/streets-v12",
         center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
         zoom: 12,
       });
-
+      
       setMap(mapInstance);
-
+      
+      // Wait for the map to load
+      mapInstance.on('load', () => {
+        // If we have location coordinates stored from previous marker
+        if (marker) {
+          const position = marker.getLngLat();
+          
+          // Create a new marker at the same position
+          const newMarker = new mapboxgl.Marker()
+            .setLngLat(position)
+            .addTo(mapInstance);
+            
+          setMarker(newMarker);
+          
+          // Center the map on the marker position
+          mapInstance.flyTo({
+            center: position,
+            zoom: 14
+          });
+        }
+      });
+  
       return () => {
         mapInstance.remove();
       };
     }
-  }, [currentStep]);
+  }, [currentStep, mapContainerRef]);
 
   // Render step content based on current step
   const renderStepContent = () => {
