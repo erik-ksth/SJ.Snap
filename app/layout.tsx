@@ -42,12 +42,38 @@ export default function RootLayout({
           <ClientAuthWrapper>
             <header className="border-b">
               <div className="container mx-auto px-4 py-2 flex justify-between items-center">
-                <Link href="/dashboard" className="text-xl font-bold">SJ Snap</Link>
+                {/* <Link href="/dashboard" className="text-xl font-bold">SJ Snap</Link> */}
+                <Link
+                  href="/dashboard"
+                  className="text-xl font-bold flex items-center"
+                >
+                  <img
+                    src="/logo.png" // Replace with the path to your logo file
+                    alt="SJ Snap Logo"
+                    className="h-8 w-8 mr-2" // Adjust height, width, and spacing as needed
+                  />
+                  SJ Snap
+                </Link>
                 {/* Desktop navigation */}
                 <nav className="hidden md:flex space-x-4">
-                  <Link href="/dashboard" className="px-3 py-2 rounded-md hover:bg-gray-100">Dashboard</Link>
-                  <Link href="/report" className="px-3 py-2 rounded-md hover:bg-gray-100">Report</Link>
-                  <Link href="/contact" className="px-3 py-2 rounded-md hover:bg-gray-100">Contact</Link>
+                  <Link
+                    href="/dashboard"
+                    className="px-3 py-2 rounded-md hover:bg-gray-100"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/report"
+                    className="px-3 py-2 rounded-md hover:bg-gray-100"
+                  >
+                    Report
+                  </Link>
+                  <Link
+                    href="/contact"
+                    className="px-3 py-2 rounded-md hover:bg-gray-100"
+                  >
+                    Contact
+                  </Link>
                 </nav>
                 <div className="flex items-center space-x-2">
                   <LoginButton />
@@ -79,10 +105,7 @@ export default function RootLayout({
               </Link>
 
               {/* Report button (centered and prominent) */}
-              <Link
-                href="/report"
-                className="flex flex-col items-center -mt-8"
-              >
+              <Link href="/report" className="flex flex-col items-center -mt-8">
                 <div className="bg-white text-black rounded-full p-4 shadow-lg border border-gray-200">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
