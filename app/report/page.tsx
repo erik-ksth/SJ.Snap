@@ -45,16 +45,22 @@ export default function ReportPage() {
     }
   }, [currentStep]);
 
-  // Check if user is on mobile
+  // Enhanced mobile detection
   const isMobile = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
-    );
+    ) || (window.innerWidth <= 768);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image is too large. Please select an image under 5MB.');
+        return;
+      }
+
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -395,7 +401,9 @@ export default function ReportPage() {
                       fill
                     />
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setImagePreview(null);
                         setImageFile(null);
                       }}
@@ -411,9 +419,42 @@ export default function ReportPage() {
                     <p className="mb-2 text-sm text-gray-500">
                       <span className="font-semibold">Take a photo</span> of the issue
                     </p>
-                    <p className="text-xs text-gray-500">
-                      Tap to open camera
+                    <p className="text-xs text-gray-500 md:block hidden">
+                      Click to upload a photo
                     </p>
+                    <p className="text-xs text-gray-500 block md:hidden">
+                      Tap to open camera or upload a photo
+                    </p>
+
+                    {/* Only show these buttons on mobile */}
+                    <div className="flex mt-4 space-x-3 md:hidden">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (fileInputRef.current) {
+                            fileInputRef.current.setAttribute('capture', 'environment');
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg"
+                      >
+                        Camera
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (fileInputRef.current) {
+                            fileInputRef.current.removeAttribute('capture');
+                            fileInputRef.current.click();
+                          }
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg"
+                      >
+                        Gallery
+                      </button>
+                    </div>
                   </div>
                 )}
                 <input
@@ -421,7 +462,6 @@ export default function ReportPage() {
                   type="file"
                   className="hidden"
                   accept="image/*"
-                  capture="environment"
                   onChange={handleImageUpload}
                 />
               </label>

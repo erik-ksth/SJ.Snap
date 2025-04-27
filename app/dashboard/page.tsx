@@ -214,7 +214,7 @@ export default function Dashboard() {
                {/* Shadcn Dialog for report details */}
                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     {selectedReport && (
-                         <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto" style={{ scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent' }}>
+                         <DialogContent className="max-w-4xl w-[90vw] max-h-[80vh] overflow-y-auto" style={{ scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent' }}>
                               <DialogHeader>
                                    <DialogTitle>Report Details</DialogTitle>
                               </DialogHeader>
