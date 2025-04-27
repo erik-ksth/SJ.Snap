@@ -7,7 +7,7 @@ import mapboxgl from "mapbox-gl";
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
 import emailjs from "@emailjs/browser";
-import { extractResponseDetails } from "../api/imageVerification/route";
+import { extractResponseDetails } from "../lib/utils";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 // /import { useRouter } from 'next/navigation';

@@ -1,5 +1,6 @@
 import { HfInference } from "@huggingface/inference";
 import { NextRequest, NextResponse } from "next/server";
+import { extractResponseDetails } from "@/app/lib/utils";
 
 // Initialize Hugging Face client
 const hfToken = process.env.HUGGING_FACE_API_KEY || "";
@@ -11,20 +12,21 @@ if (!hfToken) {
 const client = new HfInference(hfToken || "YOUR_HF_TOKEN");
 
 // Function to extract description and location from AI response
-export function extractResponseDetails(response: string) {
-  // Look for "Description of Issue:" and "Specific Location Details:" patterns
-  const descriptionMatch = response.match(
-    /Description of Issue:[\s\n]*([\s\S]*?)(?=Specific Location Details:|$)/i
-  );
-  const locationMatch = response.match(
-    /Specific Location Details:[\s\n]*([\s\S]*?)(?=$)/i
-  );
-
-  const description = descriptionMatch ? descriptionMatch[1].trim() : "";
-  const location = locationMatch ? locationMatch[1].trim() : "";
-
-  return { description, location };
-}
+// Removing this export as it's now in the utils file
+// export function extractResponseDetails(response: string) {
+//   // Look for "Description of Issue:" and "Specific Location Details:" patterns
+//   const descriptionMatch = response.match(
+//     /Description of Issue:[\s\n]*([\s\S]*?)(?=Specific Location Details:|$)/i
+//   );
+//   const locationMatch = response.match(
+//     /Specific Location Details:[\s\n]*([\s\S]*?)(?=$)/i
+//   );
+//
+//   const description = descriptionMatch ? descriptionMatch[1].trim() : "";
+//   const location = locationMatch ? locationMatch[1].trim() : "";
+//
+//   return { description, location };
+// }
 
 export async function POST(request: NextRequest) {
   try {
