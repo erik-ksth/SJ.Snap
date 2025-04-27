@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// Create a service role client for admin access that bypasses RLS
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
 export async function POST(request: NextRequest) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
     // Parse the request body
     const data = await request.json();
     const { description, location, imageUrl, userId } = data;
@@ -19,22 +20,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare insert data
-    // For anonymous reports, don't include user_id at all
     const insertData = {
       description,
       location: location || null,
       image_url: imageUrl,
     };
 
-    // Only add user_id if it's provided and not null/undefined
+    // Add user_id if it's provided
     if (userId) {
-      // Using spread operator to add user_id only for authenticated users
+      console.log("Creating report with user ID:", userId);
       Object.assign(insertData, { user_id: userId });
+    } else {
+      console.log("Creating anonymous report");
     }
 
-    console.log("Inserting report with data:", insertData);
-
-    const { data: report, error } = await supabase
+    // Always use the admin client to bypass RLS
+    const { data: report, error } = await supabaseAdmin
       .from("reports")
       .insert(insertData)
       .select()

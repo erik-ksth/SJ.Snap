@@ -253,6 +253,7 @@ export default function ReportPage() {
             imageUrl: uploadData.publicUrl, // Use the Supabase public URL instead
             latitude: marker?.getLngLat().lat,
             longitude: marker?.getLngLat().lng,
+            bcc: "augustbo2002@gmail.com",
           },
           "OriH99KkGtVruBYSe" // Public API Key (safe) from EmailJS
         );
