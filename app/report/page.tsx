@@ -21,6 +21,9 @@ export default function ReportPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -149,6 +152,21 @@ export default function ReportPage() {
     // }
   };
 
+  const validateEmail = (email: string) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
+  const handleEmailSubmit = () => {
+    if (!validateEmail(userEmail)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+    setEmailError('');
+    setShowEmailDialog(false);
+    return true;
+  };
+
   const submitReport = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -160,6 +178,12 @@ export default function ReportPage() {
     const wordCount = description.trim().split(/\s+/).filter(word => word.length > 0).length;
     if (wordCount < 2) {
       alert("Description should be at least 2 words");
+      return;
+    }
+
+    // Check if user is not logged in and we don't have an email yet
+    if (!user && !userEmail) {
+      setShowEmailDialog(true);
       return;
     }
 
@@ -247,6 +271,9 @@ export default function ReportPage() {
           console.error("Error saving report to database:", error);
         }
 
+        // Determine which email to use for BCC
+        const bccEmail = user ? user.email : userEmail;
+
         // Send email using EmailJS with Supabase image URL
         const result = await emailjs.send(
           "service_az5gytx", // Service ID from EmailJS
@@ -260,7 +287,7 @@ export default function ReportPage() {
             imageUrl: uploadData.publicUrl, // Use the Supabase public URL instead
             latitude: marker?.getLngLat().lat,
             longitude: marker?.getLngLat().lng,
-            bcc: "augustbo2002@gmail.com",
+            bcc: `augustbo2002@gmail.com,${bccEmail}`,
           },
           "OriH99KkGtVruBYSe" // Public API Key (safe) from EmailJS
         );
@@ -676,6 +703,45 @@ export default function ReportPage() {
           {renderStepContent()}
         </form>
       </div>
+
+      {/* Email dialog modal */}
+      {showEmailDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <h3 className="text-lg font-medium mb-4">Enter your email (optional)</h3>
+            <p className="mb-4 text-sm text-gray-600">You will receive a copy of the report.</p>
+            <input
+              type="email"
+              value={userEmail}
+              onChange={(e) => setUserEmail(e.target.value)}
+              className={`w-full p-2 border rounded ${emailError ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="your@email.com"
+            />
+            {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => {
+                  setShowEmailDialog(false);
+                  submitReport({ preventDefault: () => { } } as React.FormEvent);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded"
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => {
+                  if (handleEmailSubmit()) {
+                    submitReport({ preventDefault: () => { } } as React.FormEvent);
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
