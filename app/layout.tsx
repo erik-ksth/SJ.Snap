@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SupabaseAuthProvider } from "@/lib/context/supabase-auth-context";
 import { ClientAuthWrapper } from "@/components/client-auth-wrapper";
 import { LoginButton } from "@/components/login-button";
+import Image from 'next/image';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,12 +48,13 @@ export default function RootLayout({
                   href="/dashboard"
                   className="text-xl font-bold flex items-center"
                 >
-                  <img
-                    src="/logo.png" // Replace with the path to your logo file
+                  <Image
+                    src="/logo_nobg.png"
                     alt="SJ Snap Logo"
-                    className="h-8 w-8 mr-2" // Adjust height, width, and spacing as needed
+                    width={80}
+                    height={80}
+                    priority
                   />
-                  SJ Snap
                 </Link>
                 {/* Desktop navigation */}
                 <nav className="hidden md:flex space-x-4">

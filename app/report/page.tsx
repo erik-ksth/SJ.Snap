@@ -431,7 +431,7 @@ export default function ReportPage() {
         mapInstance.remove();
       };
     }
-  }, [currentStep]);
+  }, [currentStep, marker]);
 
   // Render step content based on current step
   const renderStepContent = () => {
