@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { PhotoIcon, ArrowRightIcon, CheckIcon } from "@heroicons/react/24/outline";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
+import { useRouter } from 'next/navigation';
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoiYXVuZ2JvYm8wNCIsImEiOiJjbTl5cTZzajcxbGlvMmpwdmV0a2E2MDVzIn0.HRwDajB6LBfUF1EIYlMaXg"; // Replace with your Mapbox token
@@ -18,11 +19,15 @@ export default function ReportPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // const router = useRouter();
+  const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [marker, setMarker] = useState<mapboxgl.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add state for editing in step 4
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
 
   // Add new state for tracking the current step
   const [currentStep, setCurrentStep] = useState(1);
@@ -52,8 +57,10 @@ export default function ReportPage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
-        // Move to next step after image is captured
-        setCurrentStep(2);
+        // Move to next step after image is captured if not already in step 4
+        if (currentStep === 1) {
+          setCurrentStep(2);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -170,23 +177,17 @@ export default function ReportPage() {
 
       if (responseData.response === "Negative") {
         alert("The description doesn't match with the image. Please provide an accurate description of the issue.");
+        // Return to review step instead of clearing values
+        setCurrentStep(4);
       } else {
         // Show success screen
         setShowSuccess(true);
-
-        // Reset form after 3 seconds
-        setTimeout(() => {
-          setImagePreview(null);
-          setImageFile(null);
-          setDescription('');
-          setLocation(null);
-          setCurrentStep(1);
-          setShowSuccess(false);
-        }, 3000);
       }
     } catch (error) {
-      console.error('Error submitting report:', error);
+      console.error("Error submitting report:", error);
       alert('There was an error submitting your report. Please try again.');
+      // Stay on the review page on error
+      setCurrentStep(4);
     } finally {
       setIsSubmitting(false);
     }
@@ -215,6 +216,7 @@ export default function ReportPage() {
   const renderStepContent = () => {
     // Show success screen if showSuccess is true
     if (showSuccess) {
+
       return (
         <div className="mb-6 flex flex-col items-center justify-center py-10">
           <div className="relative">
@@ -227,6 +229,29 @@ export default function ReportPage() {
           </div>
           <h2 className="text-xl font-semibold mt-8 mb-3 text-center">Report Submitted Successfully!</h2>
           <p className="text-gray-600 text-center">Thank you for your contribution</p>
+
+          <button
+            onClick={() => {
+              setShowSuccess(false);
+              setImagePreview(null);
+              setImageFile(null);
+              setDescription('');
+              setLocation(null);
+              setCurrentStep(1);
+            }}
+            className="mt-10 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Report Another Issue
+          </button>
+
+          <button
+            onClick={() => {
+              router.push('/dashboard');
+            }}
+            className="mt-4 text-black px-4 py-2 rounded underline hover:text-grey-500 cursor-pointer"
+          >
+            Go to Dashboard
+          </button>
         </div>
       );
     }
@@ -317,6 +342,13 @@ export default function ReportPage() {
               ref={mapContainerRef}
               className="w-full h-64 mt-4 border rounded"
             ></div>
+            <button
+              type="button"
+              onClick={moveToNextStep}
+              className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-6 flex items-center justify-center"
+            >
+              Next
+            </button>
           </div>
         );
 
@@ -327,21 +359,71 @@ export default function ReportPage() {
 
             {/* Image preview */}
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Photo</h3>
-              <div className="h-48 w-full relative">
+              <div className="flex justify-between">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Photo</h3>
+                <button
+                  onClick={() => editFileInputRef.current?.click()}
+                  className="text-blue-500 text-sm"
+                  type="button"
+                >
+                  Change Photo
+                </button>
+              </div>
+              <div className="h-48 w-full relative mt-2">
                 <Image
                   src={imagePreview || ''}
                   alt="Preview"
                   className="object-contain"
                   fill
                 />
+                <input
+                  ref={editFileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageUpload}
+                />
               </div>
             </div>
 
-            {/* Description preview */}
+            {/* Description preview/edit */}
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
-              <p className="p-2 bg-gray-50 border rounded-lg">{description}</p>
+              <div className="flex justify-between">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
+                {!isEditingDescription && (
+                  <button
+                    onClick={() => setIsEditingDescription(true)}
+                    className="text-blue-500 text-sm"
+                    type="button"
+                  >
+                    Edit Description
+                  </button>
+                )}
+              </div>
+              {isEditingDescription ? (
+                <>
+                  <textarea
+                    rows={4}
+                    className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                    autoFocus
+                  ></textarea>
+                  <button
+                    onClick={() => setIsEditingDescription(false)}
+                    className="mt-2 text-blue-500 text-sm"
+                    type="button"
+                  >
+                    Done
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="p-2 bg-gray-50 border rounded-lg">{description}</p>
+                </>
+              )}
             </div>
 
             {/* Location preview */}
@@ -360,7 +442,7 @@ export default function ReportPage() {
             <button
               type="submit"
               onClick={submitReport}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isEditingDescription}
               className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 disabled:bg-blue-400 mt-6"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Report'}

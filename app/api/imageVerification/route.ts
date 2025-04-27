@@ -10,6 +10,22 @@ if (!hfToken) {
 }
 const client = new HfInference(hfToken || "YOUR_HF_TOKEN");
 
+// Function to extract description and location from AI response
+function extractResponseDetails(response: string) {
+  // Look for "Description of Issue:" and "Specific Location Details:" patterns
+  const descriptionMatch = response.match(
+    /Description of Issue:[\s\n]*([\s\S]*?)(?=Specific Location Details:|$)/i
+  );
+  const locationMatch = response.match(
+    /Specific Location Details:[\s\n]*([\s\S]*?)(?=$)/i
+  );
+
+  const description = descriptionMatch ? descriptionMatch[1].trim() : "";
+  const location = locationMatch ? locationMatch[1].trim() : "";
+
+  return { description, location };
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log(
@@ -94,7 +110,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Create user message with location and description
-      const userMessage = `${description} at ${location}.\n\nCheck the image if the problem is correct. If so, format it correctly and informatively to report to the city. Otherwise, return "Negative" and nothing else.`;
+      const userMessage = `${description} at ${location}.\n\nCheck the image if the problem is correct. If so, format it correctly and informatively to report to the city. Otherwise, return "Negative" and nothing else. Return in this exact format:
+      Description of Issue:
+      Specific Location Details:
+      `;
 
       // Check if we have a valid token before proceeding
       if (!hfToken) {
@@ -147,6 +166,15 @@ export async function POST(request: NextRequest) {
               "The description doesn't match with the image. Please provide an accurate description of the issue.",
           });
         }
+
+        // Extract and log description and location details
+        const {
+          description: extractedDescription,
+          location: extractedLocation,
+        } = extractResponseDetails(response);
+        console.log(
+          `Description of Issue: ${extractedDescription}\nSpecific Location Details: ${extractedLocation}`
+        );
 
         return NextResponse.json({ success: true, response });
       } catch (apiError) {
