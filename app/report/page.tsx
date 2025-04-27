@@ -463,7 +463,7 @@ export default function ReportPage() {
                 placeholder="Enter location or click 'Detect Location'"
                 className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                 value={location || ''}
-                onChange={(e) => setLocation(e.target.value)}
+                readOnly
               />
               <button
                 type="button"
