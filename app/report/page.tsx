@@ -2,16 +2,14 @@
 
 import { useSupabaseAuth } from "@/lib/context/supabase-auth-context";
 import { useState, useEffect, useRef } from "react";
-import { PhotoIcon, ArrowRightIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { PhotoIcon, ArrowRightIcon, CheckIcon, MicrophoneIcon } from "@heroicons/react/24/outline";
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import emailjs from "@emailjs/browser";
 import { extractResponseDetails } from "../lib/utils";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
-// /import { useRouter } from 'next/navigation';
-// import { uploadFile, getPublicUrl, createReport } from '@/lib/supabase/supabase';
 
 export default function ReportPage() {
   const { user, loading } = useSupabaseAuth();
@@ -20,6 +18,7 @@ export default function ReportPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isListening, setIsListening] = useState(false); // New state for speech-to-text
   const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -34,6 +33,9 @@ export default function ReportPage() {
   const [currentStep, setCurrentStep] = useState(1);
   // Add state for success confirmation
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Add state for error count
+  const [errorCount, setErrorCount] = useState(0);
 
   useEffect(() => {
     // Automatically open camera on mobile when the page loads
@@ -105,9 +107,6 @@ export default function ReportPage() {
               setMarker(newMarker);
             }
           }
-
-          // Move to final review step
-          // setCurrentStep(4);
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -119,7 +118,6 @@ export default function ReportPage() {
     }
   };
 
-  // Handle moving to the next step
   const moveToNextStep = () => {
     // Validate current step before proceeding
     if (currentStep === 2) {
@@ -135,12 +133,62 @@ export default function ReportPage() {
 
     // Move to next step
     setCurrentStep(currentStep + 1);
-
-    // Automatically detect location when reaching location step
-    // if (currentStep === 2) {
-    //   setTimeout(detectLocation, 500);
-    // }
   };
+
+  // New function for speech-to-text
+  const handleSpeechToText = () => {
+    if (!('webkitSpeechRecognition' in window)) {
+      alert("Speech recognition is not supported in this browser. Please use Google Chrome.");
+      return;
+    }
+
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+
+    recognition.onstart = () => {
+      console.log("Speech recognition started");
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const speechResult = event.results[0][0].transcript;
+      setDescription((prev) => `${prev} ${speechResult}`.trim());
+    };
+
+    recognition.onerror = (event: any) => {
+      setErrorCount((prev) => {
+        const newErrorCount = prev + 1;
+        // console.log("Error count:", newErrorCount);
+
+        if (event.error === "not-allowed") {
+          alert("Microphone access is required for speech recognition. Please allow microphone access.");
+        } else if (event.error === "network") {
+          alert("Network error: Unable to connect to the speech recognition service. Please check your internet connection.");
+        } else {
+          alert("An error occurred during speech recognition. Please try again.");
+        }
+
+        if (newErrorCount >= 3) {
+          alert("Speech to text feature is best compatible with Google Chrome!");
+          console.log("Speech recognition error count exceeded");
+        }
+
+        return newErrorCount;
+      });
+    };
+
+    recognition.onend = () => {
+      console.log("Speech recognition ended");
+      setIsListening(false);
+    };
+
+    console.log("Starting speech recognition...");
+    recognition.start();
+  };
+
 
   const submitReport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -269,25 +317,6 @@ export default function ReportPage() {
       setIsSubmitting(false);
     }
   };
-
-  // useEffect(() => {
-  //   if (currentStep === 3 || currentStep === 4) {
-  //     if (!mapContainerRef.current) return;
-
-  //     const mapInstance = new mapboxgl.Map({
-  //       container: mapContainerRef.current,
-  //       style: "mapbox://styles/mapbox/streets-v12",
-  //       center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
-  //       zoom: 12,
-  //     });
-
-  //     setMap(mapInstance);
-
-  //     return () => {
-  //       mapInstance.remove();
-  //     };
-  //   }
-  // }, [currentStep]);
 
   useEffect(() => {
     if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
@@ -428,24 +457,44 @@ export default function ReportPage() {
           </div>
         );
 
-      case 2: // Description step
+        case 2: // Description step
         return (
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-4">Describe the Issue</h2>
-            <textarea
-              id="description"
-              rows={4}
-              className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Please describe what you're reporting..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              autoFocus
-            ></textarea>
+      
+            {/* Textarea */}
+            <div className="relative">
+              <textarea
+                id="description"
+                rows={4}
+                className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Please describe what you're reporting..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                autoFocus
+              ></textarea>
+      
+              {/* Circular Speech Button */}
+              <div className="flex justify-center mt-4">
+                <button
+                  type="button"
+                  onClick={handleSpeechToText}
+                  disabled={isListening}
+                  className={`flex items-center justify-center rounded-full w-14 h-14 border-none ${
+                    isListening ? "bg-green-400 animate-pulse" : "bg-green-600 hover:bg-green-700"
+                  } text-white focus:outline-none`}
+                >
+                  <MicrophoneIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+      
+            {/* Next Button */}
             <button
               type="button"
               onClick={moveToNextStep}
-              className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-6 flex items-center justify-center"
+              className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-8 flex items-center justify-center"
             >
               Next
               <ArrowRightIcon className="h-5 w-5 ml-2" />
