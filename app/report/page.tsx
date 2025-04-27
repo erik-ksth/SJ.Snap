@@ -12,39 +12,6 @@ import { extractResponseDetails } from "../lib/utils";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 
-// Define types for speech recognition
-interface SpeechRecognitionEvent extends Event {
-  results: {
-    [index: number]: {
-      [index: number]: {
-        transcript: string;
-      };
-    };
-  };
-  resultIndex: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-  error: string;
-}
-
-interface SpeechRecognition extends EventTarget {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onstart: (event: Event) => void;
-  onresult: (event: SpeechRecognitionEvent) => void;
-  onerror: (event: SpeechRecognitionErrorEvent) => void;
-  onend: (event: Event) => void;
-  start: () => void;
-}
-
-declare global {
-  interface Window {
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
-
 export default function ReportPage() {
   const { user, loading } = useSupabaseAuth();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -55,18 +22,24 @@ export default function ReportPage() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState(false); // New state for speech-to-text
   const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [marker, setMarker] = useState<mapboxgl.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add state for editing in step 4
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+
+  // Add new state for tracking the current step
   const [currentStep, setCurrentStep] = useState(1);
+  // Add state for success confirmation
   const [showSuccess, setShowSuccess] = useState(false);
-  const [speechErrorCount, setSpeechErrorCount] = useState(0);
-  const mapInitializedRef = useRef<boolean>(false);
+
+  // Add state for error count
+  const [errorCount, setErrorCount] = useState(0);
 
   useEffect(() => {
     // Automatically open camera on mobile when the page loads
@@ -178,31 +151,33 @@ export default function ReportPage() {
     setCurrentStep(currentStep + 1);
   };
 
-  // Speech-to-text function with proper typing
+  // New function for speech-to-text
   const handleSpeechToText = () => {
     if (!('webkitSpeechRecognition' in window)) {
       alert("Speech recognition is not supported in this browser. Please use Google Chrome.");
       return;
     }
 
-    const recognition = new window.webkitSpeechRecognition();
+    const recognition = new (window as any).webkitSpeechRecognition();
     recognition.lang = "en-US";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+
 
     recognition.onstart = () => {
       console.log("Speech recognition started");
       setIsListening(true);
     };
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       const speechResult = event.results[0][0].transcript;
       setDescription((prev) => `${prev} ${speechResult}`.trim());
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      setSpeechErrorCount((prev) => {
+    recognition.onerror = (event: any) => {
+      setErrorCount((prev) => {
         const newErrorCount = prev + 1;
+        // console.log("Error count:", newErrorCount);
 
         if (event.error === "not-allowed") {
           alert("Microphone access is required for speech recognition. Please allow microphone access.");
@@ -215,8 +190,6 @@ export default function ReportPage() {
         if (newErrorCount >= 3) {
           alert("Speech to text feature is best compatible with Google Chrome!");
           console.log("Speech recognition error count exceeded");
-          // Reset error count after showing the warning
-          return 0;
         }
 
         return newErrorCount;
@@ -231,6 +204,7 @@ export default function ReportPage() {
     console.log("Starting speech recognition...");
     recognition.start();
   };
+
 
   const validateEmail = (email: string) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -356,20 +330,20 @@ export default function ReportPage() {
 
         // Send email using EmailJS with Supabase image URL
         const result = await emailjs.send(
-          "service_az5gytx", // Service ID from EmailJS
-          "template_sqlnyfo", // Template ID from EmailJS
+          "service_hmaw4rq", // Service ID from EmailJS
+          "template_ndxs4e9", // Template ID from EmailJS
           {
             from_name: "SJ Snap",
-            from_email: "kaungsitu09009@gmail.com",
-            email: "heinkaung16@gmail.com",
+            from_email: "sjsnapteam@gmail.com",
+            email: "cityofsanjose.dev@gmail.com",
             description: enhancedDescription,
             location: enhancedLocation,
             imageUrl: uploadData.publicUrl, // Use the Supabase public URL instead
             latitude: marker?.getLngLat().lat,
             longitude: marker?.getLngLat().lng,
-            bcc: `augustbo2002@gmail.com,${bccEmail}`,
+            bcc: `${bccEmail}`,
           },
-          "OriH99KkGtVruBYSe" // Public API Key (safe) from EmailJS
+          "uPpsd3jHxxeBnS0fP" // Public API Key (safe) from EmailJS
         );
         console.log("EmailJS Result:", result);
         setShowSuccess(true);
@@ -384,73 +358,56 @@ export default function ReportPage() {
     }
   };
 
-  // Clean and concise map initialization
   useEffect(() => {
-    // Only initialize map when we enter the relevant steps and when the map is not already initialized
-    if ((currentStep === 3 || currentStep === 4) &&
-      mapContainerRef.current &&
-      !mapInitializedRef.current) {
-
+    if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
       console.log("Initializing map, step:", currentStep);
-      mapInitializedRef.current = true;
 
-      try {
-        // Create a new map instance
-        const mapInstance = new mapboxgl.Map({
-          container: mapContainerRef.current,
-          style: "mapbox://styles/mapbox/streets-v12",
-          center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
-          zoom: 12,
-        });
+      // Create a new map instance
+      const mapInstance = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
+        zoom: 12,
+      });
 
-        // Store map in state
-        setMap(mapInstance);
+      // Store map in state
+      setMap(mapInstance);
 
-        // Wait for the map to load once
-        let mapLoaded = false;
-        mapInstance.on('load', () => {
-          // Prevent duplicate load events
-          if (mapLoaded) return;
-          mapLoaded = true;
+      // Wait for the map to load once
+      let mapLoaded = false;
+      mapInstance.on('load', () => {
+        // Prevent duplicate load events
+        if (mapLoaded) return;
+        mapLoaded = true;
 
-          console.log("Map loaded successfully");
+        console.log("Map loaded successfully");
 
-          // If we have location coordinates stored from previous marker
-          if (marker) {
-            const position = marker.getLngLat();
+        // If we have location coordinates stored from previous marker
+        if (marker) {
+          const position = marker.getLngLat();
 
-            // Create a new marker at the same position
-            const newMarker = new mapboxgl.Marker()
-              .setLngLat(position)
-              .addTo(mapInstance);
+          // Create a new marker at the same position
+          const newMarker = new mapboxgl.Marker()
+            .setLngLat(position)
+            .addTo(mapInstance);
 
-            setMarker(newMarker);
+          setMarker(newMarker);
 
-            // Center the map on the marker position
-            mapInstance.flyTo({
-              center: position,
-              zoom: 14
-            });
-          }
-        });
+          // Center the map on the marker position
+          mapInstance.flyTo({
+            center: position,
+            zoom: 14
+          });
+        }
+      });
 
-        // Cleanup function
-        return () => {
-          console.log("Cleaning up map instance");
-          mapInstance.remove();
-          mapInitializedRef.current = false;
-        };
-      } catch (error) {
-        console.error("Error initializing map:", error);
-        mapInitializedRef.current = false;
-      }
+      // Cleanup function
+      return () => {
+        console.log("Cleaning up map instance");
+        mapInstance.remove();
+      };
     }
-
-    // Reset map initialization state when leaving map steps
-    if (currentStep !== 3 && currentStep !== 4) {
-      mapInitializedRef.current = false;
-    }
-  }, [currentStep, marker]);
+  }, [currentStep]);
 
   // Render step content based on current step
   const renderStepContent = () => {
@@ -586,11 +543,11 @@ export default function ReportPage() {
           </div>
         );
 
-      case 2: // Description step
+        case 2: // Description step
         return (
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-4">Describe the Issue</h2>
-
+      
             {/* Textarea */}
             <div className="relative">
               <textarea
@@ -603,26 +560,22 @@ export default function ReportPage() {
                 required
                 autoFocus
               ></textarea>
-
+      
               {/* Circular Speech Button */}
               <div className="flex justify-center mt-4">
                 <button
                   type="button"
                   onClick={handleSpeechToText}
                   disabled={isListening}
-                  className={`flex items-center justify-center rounded-full w-14 h-14 border-none ${isListening ? "bg-green-400 animate-pulse" : "bg-green-600 hover:bg-green-700"
-                    } text-white focus:outline-none`}
+                  className={`flex items-center justify-center rounded-full w-14 h-14 border-none ${
+                    isListening ? "bg-green-400 animate-pulse" : "bg-green-600 hover:bg-green-700"
+                  } text-white focus:outline-none`}
                 >
                   <MicrophoneIcon className="h-6 w-6" />
                 </button>
               </div>
-              {speechErrorCount > 0 && (
-                <p className="text-yellow-600 text-sm mt-2 text-center">
-                  {speechErrorCount} error(s) occurred. Please try again or type manually.
-                </p>
-              )}
             </div>
-
+      
             {/* Next Button */}
             <button
               type="button"
@@ -642,15 +595,16 @@ export default function ReportPage() {
             <div className="flex gap-3">
               <input
                 type="text"
-                placeholder="Click 'Detect Location' to get your current location"
+                placeholder="Click 'Detect Location' to automatically detect your location"
                 className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                readOnly
                 value={location || ''}
                 readOnly
               />
               <button
                 type="button"
                 onClick={detectLocation}
-                className="whitespace-nowrap rounded-lg bg-slate-600 px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
+                className="whitespace-nowrap rounded-lg bg-black px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
               >
                 <MdOutlineMyLocation className="h-5 w-5" />
               </button>
@@ -661,7 +615,13 @@ export default function ReportPage() {
             ></div>
             <button
               type="button"
-              onClick={moveToNextStep}
+              onClick={() => {
+                if (location) {
+                  moveToNextStep();
+                } else {
+                  alert("Please detect your location first");
+                }
+              }}
               className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-6 flex items-center justify-center"
             >
               Next
@@ -757,13 +717,6 @@ export default function ReportPage() {
                 </button>
               </div>
               <p className="p-2 bg-gray-50 border rounded-lg">{location || "Not detected"}</p>
-              <button
-                type="button"
-                onClick={detectLocation}
-                className="mt-2 text-blue-500 text-sm"
-              >
-                Detect Again
-              </button>
             </div>
 
             {/* Map */}
