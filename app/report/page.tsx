@@ -122,9 +122,15 @@ export default function ReportPage() {
   // Handle moving to the next step
   const moveToNextStep = () => {
     // Validate current step before proceeding
-    if (currentStep === 2 && !description.trim()) {
-      alert("Please enter a description");
-      return;
+    if (currentStep === 2) {
+      const wordCount = description.trim().split(/\s+/).filter(word => word.length > 0).length;
+      if (!description.trim()) {
+        alert("Please enter a description");
+        return;
+      } else if (wordCount < 2) {
+        alert("Description should be at least 2 words");
+        return;
+      }
     }
 
     // Move to next step
@@ -146,6 +152,12 @@ export default function ReportPage() {
 
     if (!imageFile || !imagePreview) {
       alert('Please upload an image');
+      return;
+    }
+
+    const wordCount = description.trim().split(/\s+/).filter(word => word.length > 0).length;
+    if (wordCount < 2) {
+      alert("Description should be at least 2 words");
       return;
     }
 
@@ -196,8 +208,8 @@ export default function ReportPage() {
           "template_sqlnyfo", // Template ID from EmailJS
           {
             from_name: "SJ Snap",
-            from_email: "aungboboyangon02@gmail.com",
-            email: "augustbo2002@gmail.com",
+            from_email: "kaungsitu09009@gmail.com",
+            email: "heinkaung16@gmail.com",
             description: description,
             location: location,
             imageUrl: imageUrl,
@@ -357,12 +369,25 @@ export default function ReportPage() {
           </div>
         );
 
-      case 3: // Location step (auto-detect)
+      case 3: // Location step (manual detect button)
         return (
           <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-4">Detecting Location...</h2>
-            <div className="flex items-center justify-center my-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <h2 className="text-lg font-semibold mb-4">Location</h2>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                placeholder="Enter location or click 'Detect Location'"
+                className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                value={location || ''}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={detectLocation}
+                className="whitespace-nowrap rounded-lg bg-slate-600 px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
+              >
+                Detect Location
+              </button>
             </div>
             <div
               ref={mapContainerRef}
@@ -374,6 +399,7 @@ export default function ReportPage() {
               className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 mt-6 flex items-center justify-center"
             >
               Next
+              <ArrowRightIcon className="h-5 w-5 ml-2" />
             </button>
           </div>
         );
