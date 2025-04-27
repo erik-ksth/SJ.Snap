@@ -11,7 +11,7 @@ if (!hfToken) {
 const client = new HfInference(hfToken || "YOUR_HF_TOKEN");
 
 // Function to extract description and location from AI response
-function extractResponseDetails(response: string) {
+export function extractResponseDetails(response: string) {
   // Look for "Description of Issue:" and "Specific Location Details:" patterns
   const descriptionMatch = response.match(
     /Description of Issue:[\s\n]*([\s\S]*?)(?=Specific Location Details:|$)/i

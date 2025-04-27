@@ -6,9 +6,10 @@ import { PhotoIcon, ArrowRightIcon, CheckIcon } from "@heroicons/react/24/outlin
 import mapboxgl from "mapbox-gl";
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
+import emailjs from "@emailjs/browser";
+import { extractResponseDetails } from "../api/imageVerification/route";
 
-mapboxgl.accessToken =
-  "pk.eyJ1IjoiYXVuZ2JvYm8wNCIsImEiOiJjbTl5cTZzajcxbGlvMmpwdmV0a2E2MDVzIn0.HRwDajB6LBfUF1EIYlMaXg"; // Replace with your Mapbox token
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 // /import { useRouter } from 'next/navigation';
 // import { uploadFile, getPublicUrl, createReport } from '@/lib/supabase/supabase';
 
@@ -180,7 +181,32 @@ export default function ReportPage() {
         // Return to review step instead of clearing values
         setCurrentStep(4);
       } else {
+        // Extract description and location from the response
+        const { description, location } = extractResponseDetails(responseData.response);
         // Show success screen
+        console.log("Description:", description);
+        console.log("Location:", location);
+
+        const imageUrl =
+          "https://media.istockphoto.com/id/1147892817/photo/san-jose-california.jpg?s=612x612&w=0&k=20&c=eDOeL6Wgjaia6_HXRzXxofC90zv9kbP5tJ88sme_TIU=";
+
+        // Send email using EmailJS
+        const result = await emailjs.send(
+          "service_az5gytx", // Service ID from EmailJS
+          "template_sqlnyfo", // Template ID from EmailJS
+          {
+            from_name: "SJ Snap",
+            from_email: "aungboboyangon02@gmail.com",
+            email: "augustbo2002@gmail.com",
+            description: description,
+            location: location,
+            imageUrl: imageUrl,
+            latitude: marker?.getLngLat().lat,
+            longitude: marker?.getLngLat().lng,
+          },
+          "OriH99KkGtVruBYSe" // Public API Key (safe) from EmailJS
+        );
+        console.log("EmailJS Result:", result);
         setShowSuccess(true);
       }
     } catch (error) {
