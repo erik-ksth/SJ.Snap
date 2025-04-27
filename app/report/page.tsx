@@ -706,15 +706,17 @@ export default function ReportPage() {
 
             {/* Location preview */}
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
+                <button
+                  type="button"
+                  onClick={detectLocation}
+                  className="text-blue-500 text-sm"
+                >
+                  Detect Again
+                </button>
+              </div>
               <p className="p-2 bg-gray-50 border rounded-lg">{location || "Not detected"}</p>
-              <button
-                type="button"
-                onClick={detectLocation}
-                className="mt-2 text-blue-500 text-sm"
-              >
-                Detect Again
-              </button>
             </div>
 
             {/* Map */}
