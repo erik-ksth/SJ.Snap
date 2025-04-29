@@ -19,7 +19,6 @@ export default function ReportPage() {
   const [location, setLocation] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isListening, setIsListening] = useState(false); // New state for speech-to-text
@@ -28,10 +27,12 @@ export default function ReportPage() {
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [marker, setMarker] = useState<mapboxgl.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const reviewFileInputRef = useRef<HTMLInputElement>(null); // Separate ref for review step
   // const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Add state for editing in step 4
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [isChangingImage, setIsChangingImage] = useState(false); // State to track image changing mode
 
   // Add new state for tracking the current step
   const [currentStep, setCurrentStep] = useState(1);
@@ -106,6 +107,10 @@ export default function ReportPage() {
         // Move to next step after image is captured if not already in step 4
         if (currentStep === 1) {
           setCurrentStep(2);
+        }
+        // Reset image changing flag if we're in review mode
+        if (currentStep === 4) {
+          setIsChangingImage(false);
         }
       };
       reader.readAsDataURL(file);
@@ -238,20 +243,9 @@ export default function ReportPage() {
     recognition.start();
   };
 
-
   const validateEmail = (email: string) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
-  };
-
-  const handleEmailSubmit = () => {
-    if (!validateEmail(userEmail)) {
-      setEmailError('Please enter a valid email address');
-      return false;
-    }
-    setEmailError('');
-    setShowEmailDialog(false);
-    return true;
   };
 
   const submitReport = async (e: React.FormEvent) => {
@@ -268,10 +262,12 @@ export default function ReportPage() {
       return;
     }
 
-    // Check if user is not logged in and we don't have an email yet
-    if (!user && !userEmail) {
-      setShowEmailDialog(true);
+    // Validate email if provided for non-logged in users
+    if (!user && userEmail.trim() && !validateEmail(userEmail)) {
+      setEmailError('Please enter a valid email address');
       return;
+    } else {
+      setEmailError('');
     }
 
     setIsSubmitting(true);
@@ -688,8 +684,36 @@ export default function ReportPage() {
                   fill
                   className="object-contain rounded-lg"
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to change the image?")) {
+                      setIsChangingImage(true);
+                      if (reviewFileInputRef.current) {
+                        reviewFileInputRef.current.click();
+                      }
+                    }
+                  }}
+                  className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg text-sm"
+                >
+                  Change Image
+                </button>
+                {isChangingImage && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="text-white">Selecting new image...</div>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Hidden file input for review step */}
+            <input
+              ref={reviewFileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageUpload}
+            />
 
             {/* Description preview */}
             <div className="mb-4">
@@ -735,6 +759,22 @@ export default function ReportPage() {
               <div className="mb-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
                 <p className="p-2 bg-gray-50 border rounded-lg">{location}</p>
+              </div>
+            )}
+
+            {/* Optional Email for non-logged-in users */}
+            {!user && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Email (Optional)</h3>
+                <p className="text-xs text-gray-500 mb-1">Receive a copy of your report</p>
+                <input
+                  type="email"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                  className={`block w-full rounded-lg border ${emailError ? 'border-red-500' : 'border-gray-300'} bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500`}
+                  placeholder="your@email.com"
+                />
+                {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
               </div>
             )}
 
@@ -812,46 +852,6 @@ export default function ReportPage() {
           {renderStepContent()}
         </form>
       </div>
-
-      {/* Email dialog modal */}
-      {showEmailDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
-            <h3 className="text-lg font-medium mb-4">Enter your email (optional)</h3>
-            <p className="mb-4 text-sm text-gray-600">You will receive a copy of the report.</p>
-            <input
-              type="email"
-              value={userEmail}
-              onChange={(e) => setUserEmail(e.target.value)}
-              className={`w-full p-2 border rounded ${emailError ? 'border-red-500' : 'border-gray-300'}`}
-              placeholder="your@email.com"
-            />
-            {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => {
-                  setShowEmailDialog(false);
-                  submitReport({ preventDefault: () => { } } as React.FormEvent);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded"
-                type="button"
-              >
-                Skip
-              </button>
-              <button
-                onClick={() => {
-                  if (handleEmailSubmit()) {
-                    submitReport({ preventDefault: () => { } } as React.FormEvent);
-                  }
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
