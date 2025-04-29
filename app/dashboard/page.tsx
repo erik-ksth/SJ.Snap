@@ -1,7 +1,7 @@
 "use client";
 
 import { useSupabaseAuth } from "@/lib/context/supabase-auth-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -47,7 +47,7 @@ export default function Dashboard() {
      const [selectedReport, setSelectedReport] = useState<Report | null>(null);
      const [dialogOpen, setDialogOpen] = useState(false);
 
-     const fetchReports = async (page = 1, limit = 10, userId?: string) => {
+     const fetchReports = useCallback(async (page = 1, limit = 10, userId?: string) => {
           setIsLoading(true);
           setError(null);
           try {
@@ -75,7 +75,7 @@ export default function Dashboard() {
           } finally {
                setIsLoading(false);
           }
-     };
+     }, [visibilityFilter]);
 
      useEffect(() => {
           // Initial fetch of reports
@@ -86,7 +86,7 @@ export default function Dashboard() {
                     fetchReports(1, 10);
                }
           }
-     }, [loading, user, viewMode, visibilityFilter]);
+     }, [loading, user, viewMode, fetchReports]);
 
      const handlePageChange = (newPage: number) => {
           if (viewMode === "mine" && user) {

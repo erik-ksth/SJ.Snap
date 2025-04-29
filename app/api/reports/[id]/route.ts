@@ -6,10 +6,13 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
     const reportId = params.id;
     const data = await request.json();
