@@ -443,6 +443,7 @@ export default function ReportPage() {
         mapInstance.remove();
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
   // Render step content based on current step

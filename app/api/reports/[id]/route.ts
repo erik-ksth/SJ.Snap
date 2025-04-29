@@ -6,15 +6,12 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-type RouteContext = {
-  params: {
-    id: string;
-  };
-};
-
-export async function PATCH(request: NextRequest, { params }: RouteContext) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const reportId = params.id;
+    const { id: reportId } = await params;
     const data = await request.json();
     const { is_public } = data;
 
