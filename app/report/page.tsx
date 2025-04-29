@@ -22,6 +22,7 @@ export default function ReportPage() {
   const [userEmail, setUserEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [isListening, setIsListening] = useState(false); // New state for speech-to-text
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false); // New state for location detection
   const router = useRouter();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -120,7 +121,8 @@ export default function ReportPage() {
   const reverseGeocode = async (lat: number, lon: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+        // `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=37.321626&lon=-121.907250`
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
       );
       const data = await response.json();
       return data.display_name; // Full address
@@ -132,10 +134,12 @@ export default function ReportPage() {
 
   const detectLocation = () => {
     if (navigator.geolocation) {
+      setIsDetectingLocation(true); // Set loading state to true
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
+
           const address = await reverseGeocode(lat, lng);
           if (address) {
             setLocation(address);
@@ -161,10 +165,12 @@ export default function ReportPage() {
             // Update marker state
             setMarker(newMarker);
           }
+          setIsDetectingLocation(false); // Set loading state to false when done
         },
         (error) => {
           console.error("Error getting location:", error);
           alert("Unable to retrieve your location");
+          setIsDetectingLocation(false); // Set loading state to false on error
         }
       );
     } else {
@@ -631,30 +637,45 @@ export default function ReportPage() {
           </div>
         );
 
-      case 3: // Location step (manual detect button)
+      case 3: // Location step (simplified detect button)
         return (
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-4">Location</h2>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                placeholder="Click 'Detect Location' to automatically detect your location"
-                className="flex-1 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
-                readOnly
-                value={location || ''}
-              />
-              <button
-                type="button"
-                onClick={detectLocation}
-                className="whitespace-nowrap rounded-lg bg-black px-4 py-2.5 text-center text-white font-medium hover:bg-slate-700"
-              >
-                <MdOutlineMyLocation className="h-5 w-5" />
-              </button>
-            </div>
+
+            {/* Detect Location Button */}
+            <button
+              type="button"
+              onClick={detectLocation}
+              disabled={isSubmitting || isDetectingLocation}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-black px-5 py-3 text-center text-white font-medium hover:bg-slate-700 disabled:opacity-50"
+            >
+              {isDetectingLocation ? (
+                <>
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                  <span>Detecting your location...</span>
+                </>
+              ) : (
+                <>
+                  <MdOutlineMyLocation className="h-5 w-5" />
+                  {location ? "Update Location" : "Detect My Location"}
+                </>
+              )}
+            </button>
+
+            {/* Display Location When Available */}
+            {location && (
+              <div className="mt-4 p-3 bg-gray-50 border rounded-lg">
+                <p className="text-gray-700">{location}</p>
+              </div>
+            )}
+
+            {/* Map Container */}
             <div
               ref={mapContainerRef}
-              className="w-full h-64 mt-4 border rounded"
+              className="w-full h-64 mt-4 border rounded-lg"
             ></div>
+
+            {/* Next Button */}
             <button
               type="button"
               onClick={() => {
