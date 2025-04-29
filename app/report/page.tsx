@@ -318,9 +318,13 @@ export default function ReportPage() {
       const responseData = await response.json();
       console.log("API Response:", responseData);
 
-      if (responseData.response === "Negative") {
-        alert("The description doesn't match with the image. Please provide an accurate description of the issue.");
+      if (responseData.response === "DescriptionMismatch") {
+        alert("The description doesn't match with the image. Please try again with a more accurate description that matches what's visible in the photo.");
         // Return to review step instead of clearing values
+        setCurrentStep(4);
+      } else if (responseData.response === "NotCityIssue") {
+        alert("This image appears to show a private property issue or something unrelated to city cleanliness. Please only report public issues that city services can address.");
+        // Return to review step
         setCurrentStep(4);
       } else {
         // Extract description and location from the response
@@ -830,6 +834,7 @@ export default function ReportPage() {
                   submitReport({ preventDefault: () => { } } as React.FormEvent);
                 }}
                 className="px-4 py-2 border border-gray-300 rounded"
+                type="button"
               >
                 Skip
               </button>

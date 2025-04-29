@@ -112,10 +112,15 @@ export async function POST(request: NextRequest) {
       }
 
       // Create user message with location and description
-      const userMessage = `${description} at ${location}.\n\nCheck the image if the problem is correct and the problem is related to the city that can be solved by the city. It cannot be a problem related to the private property or unrelated to cleanliness. It must also be a real photo. If all the above conditions are met, format it correctly and informatively to report to the city. Otherwise, return "Negative" and nothing else. Return in this exact format:
+      const userMessage = `${description} at ${location}.\n\nCheck the image if the problem is correct and the problem is related to the city that can be solved by the city. It cannot be a problem related to the private property or unrelated to cleanliness. It must also be a real photo. 
+
+If all the above conditions are met, format it correctly and informatively to report to the city in this exact format:
       Description of Issue:
       Specific Location Details:
-      `;
+      
+If the image doesn't match the provided description, return "DescriptionMismatch" and nothing else.
+
+If the image is related to private property or not related to cleanliness issues that can be solved by the city, return "NotCityIssue" and nothing else.`;
 
       // Check if we have a valid token before proceeding
       if (!hfToken) {
@@ -159,13 +164,23 @@ export async function POST(request: NextRequest) {
 
         console.log("Response received, length:", response.length);
 
-        // Check if response is "Negative"
-        if (response.trim() === "Negative") {
+        // Check response based on different rejection keywords
+        const trimmedResponse = response.trim();
+        if (trimmedResponse === "DescriptionMismatch") {
           return NextResponse.json({
             success: false,
-            response: "Negative",
+            response: "DescriptionMismatch",
             message:
               "The description doesn't match with the image. Please provide an accurate description of the issue.",
+          });
+        }
+
+        if (trimmedResponse === "NotCityIssue") {
+          return NextResponse.json({
+            success: false,
+            response: "NotCityIssue",
+            message:
+              "This issue appears to be related to private property or not related to city cleanliness. Please report issues that can be addressed by city services.",
           });
         }
 
