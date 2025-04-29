@@ -120,10 +120,17 @@ export default function ReportPage() {
 
   const reverseGeocode = async (lat: number, lon: number) => {
     try {
+      // Set a timeout for the reverse geocoding request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
       const response = await fetch(
-        // `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=37.321626&lon=-121.907250`
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+        { signal: controller.signal }
       );
+
+      clearTimeout(timeoutId);
+
       const data = await response.json();
       return data.display_name; // Full address
     } catch (error) {
@@ -135,42 +142,55 @@ export default function ReportPage() {
   const detectLocation = () => {
     if (navigator.geolocation) {
       setIsDetectingLocation(true); // Set loading state to true
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
 
-          const address = await reverseGeocode(lat, lng);
-          if (address) {
-            setLocation(address);
-          } else {
-            setLocation(`Lat: ${lat}, Lng: ${lng}`);
-          }
+          // First set coordinates as location temporarily
+          setLocation(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`);
 
-          // Update Mapbox map and marker
+          // Update map with the coordinates
           if (map) {
-            // First center map on the location
             map.flyTo({ center: [lng, lat], zoom: 14 });
 
-            // Clear existing marker if any
             if (marker) {
               marker.remove();
             }
 
-            // Create a new marker
             const newMarker = new mapboxgl.Marker()
               .setLngLat([lng, lat])
               .addTo(map);
 
-            // Update marker state
             setMarker(newMarker);
           }
-          setIsDetectingLocation(false); // Set loading state to false when done
+
+          // Now try to get the address
+          try {
+            // Create a promise that resolves with the result or times out
+            const address = await Promise.race([
+              reverseGeocode(lat, lng),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Address lookup timed out")), 8000)
+              )
+            ]);
+
+            // Only update location if we got a valid address
+            if (address) {
+              setLocation(address);
+            }
+          } catch (error) {
+            console.error("Error or timeout in address lookup:", error);
+            // Keep the coordinate format we already set
+          } finally {
+            setIsDetectingLocation(false);
+          }
         },
         (error) => {
           console.error("Error getting location:", error);
           alert("Unable to retrieve your location");
-          setIsDetectingLocation(false); // Set loading state to false on error
+          setIsDetectingLocation(false);
         }
       );
     } else {
