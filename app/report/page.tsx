@@ -28,7 +28,7 @@ export default function ReportPage() {
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [marker, setMarker] = useState<mapboxgl.Marker | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
+  // const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Add state for editing in step 4
   const [isEditingDescription, setIsEditingDescription] = useState(false);
@@ -40,6 +40,9 @@ export default function ReportPage() {
 
   // Add state for error count
   const [errorCount, setErrorCount] = useState(0);
+
+  // Add state for privacy toggle
+  const [isPublic, setIsPublic] = useState(false);
 
   // Add type for speech recognition
   interface SpeechRecognitionEvent extends Event {
@@ -332,8 +335,11 @@ export default function ReportPage() {
             description: enhancedDescription,
             location: enhancedLocation,
             imageUrl: uploadData.publicUrl,
-            // Only include userId if user is logged in
-            ...(user && { userId: user.id })
+            // Only include userId and isPublic if user is logged in
+            ...(user && {
+              userId: user.id,
+              isPublic: isPublic
+            })
           };
 
           const reportResponse = await fetch('/api/reports', {
@@ -388,56 +394,6 @@ export default function ReportPage() {
     }
   };
 
-  // useEffect(() => {
-  //   if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
-  //     console.log("Initializing map, step:", currentStep);
-
-  //     // Create a new map instance
-  //     const mapInstance = new mapboxgl.Map({
-  //       container: mapContainerRef.current,
-  //       style: "mapbox://styles/mapbox/streets-v12",
-  //       center: [-121.87578145532126, 37.334973065378634], // Default center (SJSU)
-  //       zoom: 12,
-  //     });
-
-  //     // Store map in state
-  //     setMap(mapInstance);
-
-  //     // Wait for the map to load once
-  //     let mapLoaded = false;
-  //     mapInstance.on('load', () => {
-  //       // Prevent duplicate load events
-  //       if (mapLoaded) return;
-  //       mapLoaded = true;
-
-  //       console.log("Map loaded successfully");
-
-  //       // If we have location coordinates stored from previous marker
-  //       if (marker) {
-  //         const position = marker.getLngLat();
-
-  //         // Create a new marker at the same position
-  //         const newMarker = new mapboxgl.Marker()
-  //           .setLngLat(position)
-  //           .addTo(mapInstance);
-
-  //         setMarker(newMarker);
-
-  //         // Center the map on the marker position
-  //         mapInstance.flyTo({
-  //           center: position,
-  //           zoom: 14
-  //         });
-  //       }
-  //     });
-
-  //     // Cleanup function
-  //     return () => {
-  //       console.log("Cleaning up map instance");
-  //       mapInstance.remove();
-  //     };
-  //   }
-  // }, [currentStep, marker]);
   useEffect(() => {
     if ((currentStep === 3 || currentStep === 4) && mapContainerRef.current) {
       console.log("Initializing map, step:", currentStep);
@@ -489,13 +445,10 @@ export default function ReportPage() {
     }
   }, [currentStep]);
 
-
-
   // Render step content based on current step
   const renderStepContent = () => {
     // Show success screen if showSuccess is true
     if (showSuccess) {
-
       return (
         <div className="mb-6 flex flex-col items-center justify-center py-10">
           <div className="relative">
@@ -516,6 +469,7 @@ export default function ReportPage() {
           )}
 
           <button
+            type="button"
             onClick={() => {
               setShowSuccess(false);
               setImagePreview(null);
@@ -530,6 +484,7 @@ export default function ReportPage() {
           </button>
 
           <button
+            type="button"
             onClick={() => {
               router.push('/dashboard');
             }}
@@ -718,48 +673,28 @@ export default function ReportPage() {
 
       case 4: // Final review step
         return (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-4">Review and Submit</h2>
-
+          <div className="space-y-6">
             {/* Image preview */}
-            <div className="mb-4">
-              <div className="flex justify-between">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Photo</h3>
-                <button
-                  onClick={() => editFileInputRef.current?.click()}
-                  className="text-blue-500 text-sm"
-                  type="button"
-                >
-                  Change Photo
-                </button>
-              </div>
-              <div className="h-48 w-full relative mt-2">
+            {imagePreview && (
+              <div className="relative h-64 w-full">
                 <Image
-                  src={imagePreview || ''}
+                  src={imagePreview}
                   alt="Preview"
-                  className="object-contain"
                   fill
-                />
-                <input
-                  ref={editFileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleImageUpload}
+                  className="object-contain rounded-lg"
                 />
               </div>
-            </div>
+            )}
 
-            {/* Description preview/edit */}
+            {/* Description preview */}
             <div className="mb-4">
               <div className="flex justify-between">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
                 {!isEditingDescription && (
                   <button
+                    type="button"
                     onClick={() => setIsEditingDescription(true)}
                     className="text-blue-500 text-sm"
-                    type="button"
                   >
                     Edit Description
                   </button>
@@ -776,9 +711,9 @@ export default function ReportPage() {
                     autoFocus
                   ></textarea>
                   <button
+                    type="button"
                     onClick={() => setIsEditingDescription(false)}
                     className="mt-2 text-blue-500 text-sm"
-                    type="button"
                   >
                     Done
                   </button>
@@ -791,34 +726,41 @@ export default function ReportPage() {
             </div>
 
             {/* Location preview */}
-            <div className="mb-4">
-              <div className="flex justify-between items-center">
+            {location && (
+              <div className="mb-4">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
-                <button
-                  type="button"
-                  onClick={detectLocation}
-                  className="text-blue-500 text-sm"
-                >
-                  Detect Again
-                </button>
+                <p className="p-2 bg-gray-50 border rounded-lg">{location}</p>
               </div>
-              <p className="p-2 bg-gray-50 border rounded-lg">{location || "Not detected"}</p>
-            </div>
+            )}
 
-            {/* Map */}
-            <div
-              ref={mapContainerRef}
-              className="w-full h-64 mt-4 border rounded"
-            ></div>
+            {/* Privacy toggle for logged-in users */}
+            {user && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Privacy</h3>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="isPublic"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isPublic" className="text-sm text-gray-700">
+                    Make this report public
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Public reports will be visible to everyone on the dashboard. Private reports will only be visible to you.
+                </p>
+              </div>
+            )}
 
-            {/* Submit button */}
             <button
               type="submit"
-              onClick={submitReport}
-              disabled={isSubmitting || isEditingDescription}
-              className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-center text-white font-medium hover:bg-blue-700 disabled:bg-blue-400 mt-6"
+              disabled={isSubmitting}
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Report'}
+              {isSubmitting ? "Submitting..." : "Submit Report"}
             </button>
           </div>
         );
@@ -861,7 +803,7 @@ export default function ReportPage() {
         </div>
 
         {/* Step content */}
-        <form onSubmit={(e) => e.preventDefault()}>
+        <form onSubmit={submitReport}>
           {renderStepContent()}
         </form>
       </div>

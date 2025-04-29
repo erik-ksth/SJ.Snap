@@ -13,9 +13,11 @@ export async function GET(request: NextRequest) {
     const userId = url.searchParams.get("userId");
     const limit = parseInt(url.searchParams.get("limit") || "10");
     const page = parseInt(url.searchParams.get("page") || "1");
+    const showPrivate = url.searchParams.get("showPrivate") === "true";
+    const showPublic = url.searchParams.get("showPublic") === "true";
     const offset = (page - 1) * limit;
 
-    // Query to get all reports using the admin client
+    // Query to get reports using the admin client
     let query = supabaseAdmin
       .from("reports")
       .select(
@@ -25,6 +27,7 @@ export async function GET(request: NextRequest) {
         description,
         location,
         image_url,
+        is_public,
         created_at
       `
       )
@@ -35,6 +38,18 @@ export async function GET(request: NextRequest) {
     // Filter by userId if provided
     if (userId) {
       query = query.eq("user_id", userId);
+      // Apply visibility filters
+      if (showPrivate) {
+        // Show only private reports
+        query = query.eq("is_public", false);
+      } else if (showPublic) {
+        // Show only public reports
+        query = query.eq("is_public", true);
+      }
+      // If neither showPrivate nor showPublic is true, show all reports
+    } else {
+      // For non-user specific view, only show public reports
+      query = query.eq("is_public", true);
     }
 
     const { data: reports, error } = await query;
@@ -48,9 +63,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const { count: totalCount } = await supabaseAdmin
+    let countQuery = supabaseAdmin
       .from("reports")
       .select("*", { count: "exact", head: true });
+
+    // Apply the same filters for the count
+    if (userId) {
+      countQuery = countQuery.eq("user_id", userId);
+      if (showPrivate) {
+        countQuery = countQuery.eq("is_public", false);
+      } else if (showPublic) {
+        countQuery = countQuery.eq("is_public", true);
+      }
+    } else {
+      countQuery = countQuery.eq("is_public", true);
+    }
+
+    const { count: totalCount } = await countQuery;
 
     return NextResponse.json({
       success: true,

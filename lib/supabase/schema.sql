@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS reports (
   description TEXT NOT NULL,
   location TEXT,
   image_url TEXT,
+  is_public BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -37,11 +38,17 @@ CREATE POLICY "Users can update own profile"
   USING (auth.uid() = id);
 
 -- Create policies for reports
--- Anyone can view reports
-DROP POLICY IF EXISTS "Anyone can view reports" ON reports;
-CREATE POLICY "Anyone can view reports" 
+-- Anyone can view public reports
+DROP POLICY IF EXISTS "Anyone can view public reports" ON reports;
+CREATE POLICY "Anyone can view public reports" 
   ON reports FOR SELECT 
-  USING (true);
+  USING (is_public = true);
+
+-- Users can view their own reports (public or private)
+DROP POLICY IF EXISTS "Users can view own reports" ON reports;
+CREATE POLICY "Users can view own reports" 
+  ON reports FOR SELECT 
+  USING (auth.uid() = user_id);
 
 -- Anyone can create anonymous reports (with null user_id)
 DROP POLICY IF EXISTS "Anyone can create anonymous reports" ON reports;

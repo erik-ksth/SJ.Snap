@@ -42,6 +42,7 @@ export interface Database {
           description: string;
           location: string | null;
           image_url: string | null;
+          is_public: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -51,6 +52,7 @@ export interface Database {
           description: string;
           location?: string | null;
           image_url?: string | null;
+          is_public?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -60,6 +62,7 @@ export interface Database {
           description?: string;
           location?: string | null;
           image_url?: string | null;
+          is_public?: boolean;
           created_at?: string;
           updated_at?: string;
         };
