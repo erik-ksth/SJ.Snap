@@ -13,7 +13,8 @@ export async function PATCH(
   try {
     const { id: reportId } = await params;
     const data = await request.json();
-    const { is_public } = data;
+    // Default to false (private) if is_public is not provided
+    const is_public = data.is_public ?? false;
 
     // Verify the report exists
     const { error: fetchError } = await supabaseAdmin
